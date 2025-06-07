@@ -17,7 +17,8 @@ This MCP server supports the **4C Learning Model** (Connect → Concept → Conc
 
 - **Generate Session Content**: Creates comprehensive Learning Hour materials for any coding topic
 - **Generate Code Examples**: Produces before/after code examples with explanations
-- **Miro-Compatible Output**: Structured content ready for use with Miro MCP tools
+- **Miro Integration**: Direct integration with Miro API to create visual Learning Hour boards
+- **OAuth Support**: Complete OAuth flow for Miro authentication
 
 ## Tools
 
@@ -44,6 +45,28 @@ Creates detailed before/after code examples for learning topics.
 }
 ```
 
+### `get_miro_auth_url`
+Generates a Miro OAuth authorization URL for obtaining access tokens.
+
+**Input:**
+```json
+{
+  "redirectUri": "http://localhost:3000/callback",
+  "state": "optional-security-state"
+}
+```
+
+### `create_miro_board`
+Creates a Miro board with Learning Hour content automatically laid out.
+
+**Input:**
+```json
+{
+  "sessionContent": {}, // Output from generate_session
+  "accessToken": "your_miro_access_token"
+}
+```
+
 ## Setup
 
 1. Install dependencies:
@@ -51,38 +74,95 @@ Creates detailed before/after code examples for learning topics.
 npm install
 ```
 
-2. Set environment variable (optional):
+2. Configure environment variables:
 ```bash
-export ANTHROPIC_API_KEY="your-anthropic-api-key"
+cp .env.example .env
+# Edit .env and add your Anthropic API key
 ```
 
-3. Build and run:
+3. Get your API keys:
+
+   **Anthropic API Key:**
+   - Visit [Anthropic Console](https://console.anthropic.com/)
+   - Create an account or sign in
+   - Generate an API key
+   - Add it to your `.env` file:
+     ```
+     ANTHROPIC_API_KEY=your_actual_api_key_here
+     ```
+
+   **Miro Integration (Optional):**
+   - Visit [Miro Developers](https://developers.miro.com/)
+   - Create a new app to get Client ID and Client Secret
+   - Add to your `.env` file:
+     ```
+     MIRO_CLIENT_ID=your_miro_client_id
+     MIRO_CLIENT_SECRET=your_miro_client_secret
+     ```
+
+4. Build and run:
 ```bash
 npm run build && npm start
 ```
 
-## Integration with Miro
+## Testing
 
-This MCP works perfectly with the Miro MCP server. The workflow is:
-
-1. **Generate Content**: Use `generate_session` to create learning content
-2. **Create Board**: Use Miro MCP tools with the `miroContent` output
-3. **Add Examples**: Use `generate_code_example` for detailed code demonstrations
-
-### Example Workflow
+Run the integration tests to verify your API connection:
 
 ```bash
-# 1. Generate learning session
-learning-hour: generate_session {"topic": "Feature Envy"}
+# Run all tests
+npm test
 
-# 2. Use the miroContent output with Miro MCP
-miro: createBoard {"name": "Learning Hour: Feature Envy"}
-miro: createStickyNoteItem {...} # for each section
+# Run only integration tests
+npm run test:integration
 ```
+
+**Note**: Integration tests require a valid `ANTHROPIC_API_KEY` in your `.env` file and will make real API calls.
+
+## Miro Integration Workflow
+
+### Option 1: Direct Integration (Recommended)
+
+1. **Get Miro Authorization URL**:
+```json
+{
+  "tool": "get_miro_auth_url",
+  "arguments": {
+    "redirectUri": "http://localhost:3000/callback"
+  }
+}
+```
+
+2. **Generate Learning Session**:
+```json
+{
+  "tool": "generate_session",
+  "arguments": {
+    "topic": "Feature Envy"
+  }
+}
+```
+
+3. **Create Miro Board**:
+```json
+{
+  "tool": "create_miro_board",
+  "arguments": {
+    "sessionContent": {}, // Use output from step 2
+    "accessToken": "your_miro_access_token"
+  }
+}
+```
+
+### Option 2: Manual Miro Integration
+
+You can also use the structured `miroContent` output from `generate_session` with other Miro tools or the Miro web interface.
 
 ## Environment Variables
 
-- `ANTHROPIC_API_KEY`: Optional - enables AI-generated content (falls back to mock data)
+- `ANTHROPIC_API_KEY`: Required - your Anthropic API key for generating Learning Hour content
+- `MIRO_CLIENT_ID`: Optional - your Miro app client ID for OAuth authentication
+- `MIRO_CLIENT_SECRET`: Optional - your Miro app client secret for OAuth authentication
 
 ## Usage Examples
 
