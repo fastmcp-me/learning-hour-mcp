@@ -1,6 +1,17 @@
 # Learning Hour MCP
 
-An MCP server that generates comprehensive Learning Hour content for Technical Coaches. Works seamlessly with the Miro MCP for creating interactive boards.
+An MCP server that generates comprehensive Learning Hour content for Technical Coaches, enabling teams to practice technical excellence through structured deliberate practice sessions. Works seamlessly with the Miro MCP for creating interactive boards.
+
+## Philosophy
+
+Learning Hours are structured practice sessions where software teams develop technical excellence skills through deliberate practice. Just as athletes and pilots dedicate time to practice their craft, software developers need dedicated time to master fundamental programming practices that stand the test of time.
+
+This MCP server supports the **4C Learning Model** (Connect → Concept → Concrete → Conclusion) and focuses on technical practices that enhance agility:
+- Test Driven Development (TDD)
+- Refactoring techniques
+- Clean code principles
+- Evolutionary design
+- Pairing/ensemble programming
 
 ## Features
 
@@ -97,3 +108,20 @@ miro: createStickyNoteItem {...} # for each section
 ```
 
 The output includes structured content perfect for Technical Coaches to run effective Learning Hours with hands-on exercises and group discussions.
+
+## Documentation
+
+- [Learning Hours Guide](./docs/LEARNING_HOURS.md) - Comprehensive guide to Learning Hours philosophy and implementation
+- [Domain Vocabulary](./docs/DOMAIN_VOCABULARY.md) - Key terms and concepts used in Learning Hours
+- [Coding Style Guidelines](./docs/CODING_STYLE.md) - Code style aligned with clean code principles
+
+## Learning Outcomes
+
+Teams practicing Learning Hours experience:
+- Frequent deployments with minimal defects
+- Faster development velocity  
+- Higher quality software delivery
+- Improved team morale and collaboration
+- Reduced technical debt
+
+> "Continuous attention to technical excellence and good design enhances agility" - The 9th principle of the Agile Manifesto
