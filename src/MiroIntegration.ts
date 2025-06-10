@@ -116,6 +116,11 @@ export class MiroIntegration {
 
       return response.data;
     } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const status = error.response?.status;
+        const data = error.response?.data;
+        throw new Error(`Failed to create Miro board: ${status} - ${JSON.stringify(data)}`);
+      }
       throw new Error(`Failed to create Miro board: ${error instanceof Error ? error.message : String(error)}`);
     }
   }

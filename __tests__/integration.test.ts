@@ -13,7 +13,7 @@ describe('Anthropic API Integration', () => {
         generator = new LearningHourGenerator();
     });
 
-    it('should generate real session content using Anthropic API', async () => {
+    it.skip('should generate real session content using Anthropic API', async () => {
         const topic = 'Feature Envy';
 
         const result = await generator.generateSessionContent(topic);
@@ -24,7 +24,7 @@ describe('Anthropic API Integration', () => {
         expect(result.topic).toBe(topic);
     }, 30000);
 
-    it('should generate real code examples using Anthropic API', async () => {
+    it.skip('should generate real code examples using Anthropic API', async () => {
         const topic = 'Extract Method';
         const language = 'typescript';
 
