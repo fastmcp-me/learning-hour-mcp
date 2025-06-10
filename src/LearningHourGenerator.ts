@@ -44,7 +44,11 @@ export class LearningHourGenerator {
   private readonly anthropicApiUrl = 'https://api.anthropic.com/v1/messages';
   private readonly model = 'claude-3-5-sonnet-20241022';
 
-  buildSessionPrompt(topic: string): string {
+  buildSessionPrompt(topic: string, style: string = 'slide'): string {
+    return this.loadSessionPrompt(topic, style);
+  }
+
+  private loadSessionPrompt(topic: string, style: string) {
     return `Create a comprehensive Learning Hour session for Technical Coaches on the topic: "${topic}".
 
 This should follow the 4C Learning Model (Connect → Concept → Concrete → Conclusion) and focus on technical excellence practices that enhance agility.
@@ -55,7 +59,7 @@ IMPORTANT: Return ONLY valid JSON with no additional text, explanations, or mark
 3. Step-by-step activities (2-4 hands-on exercises following the 4C model)
 4. Discussion prompts for group reflection (4-5 thoughtful questions about real-world application)
 5. Key takeaways (3-4 main points to remember)
-6. Miro board structure with sticky note content for visual facilitation
+6. Miro board structure optimized for ${style} presentation style with sticky note content
 
 Format your response as JSON with this exact structure:
 {
@@ -93,6 +97,7 @@ Format your response as JSON with this exact structure:
   ],
   "miroContent": {
     "boardTitle": "Learning Hour: ${topic}",
+    "style": "${style}",
     "sections": [
       {
         "title": "Session Overview",
@@ -127,7 +132,12 @@ Format your response as JSON with this exact structure:
   }
 }
 
-Ensure all content is specific to ${topic} and provides practical value for software development teams.`;
+Ensure all content is specific to ${topic} and provides practical value for software development teams.
+
+For ${style} style:
+- slide: Create content optimized for presentation slides with bullet points and visual organization
+- vertical: Create content for traditional vertical scrolling layout
+- workshop: Create content for interactive workshop format with hands-on activities`;
   }
 
   buildCodeExamplePrompt(topic: string, language: string): string {
@@ -160,12 +170,12 @@ Format as JSON:
 Make the code examples realistic and representative of real-world scenarios where ${topic} commonly occurs.`;
   }
 
-  async generateSessionContent(topic: string): Promise<SessionContent> {
+  async generateSessionContent(topic: string, style: string = 'slide'): Promise<SessionContent> {
     if (!process.env.ANTHROPIC_API_KEY) {
       throw new Error('ANTHROPIC_API_KEY environment variable is required');
     }
 
-    const prompt = this.buildSessionPrompt(topic);
+    const prompt = this.buildSessionPrompt(topic, style);
 
     try {
       const response = await axios.post(this.anthropicApiUrl, {

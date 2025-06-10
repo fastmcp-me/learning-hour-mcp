@@ -15,6 +15,7 @@ import { LearningHourGenerator } from "./LearningHourGenerator.js";
 
 const GenerateSessionInputSchema = z.object({
   topic: z.string().min(1, "Topic is required"),
+  style: z.string().optional().default('slide'),
 });
 
 const GenerateCodeExampleInputSchema = z.object({
@@ -60,6 +61,11 @@ class LearningHourMCP {
               topic: {
                 type: "string",
                 description: "The learning topic (e.g., 'Feature Envy', 'DRY Principle')",
+              },
+              style: {
+                type: "string",
+                description: "Presentation style: slide (default), vertical, or workshop",
+                default: "slide"
               },
             },
             required: ["topic"],
@@ -129,7 +135,7 @@ class LearningHourMCP {
     const input = GenerateSessionInputSchema.parse(args);
     
     try {
-      const sessionData = await this.generator.generateSessionContent(input.topic);
+      const sessionData = await this.generator.generateSessionContent(input.topic, input.style);
 
       return {
         content: [
@@ -180,12 +186,6 @@ class LearningHourMCP {
       }
 
       const miro = new MiroIntegration(process.env.MIRO_ACCESS_TOKEN);
-      
-      const isValidToken = await miro.validateToken();
-      if (!isValidToken) {
-        throw new Error('Invalid Miro access token');
-      }
-
       const layout = await miro.createLearningHourBoard(input.sessionContent);
       const viewLink = await miro.getBoardViewLink(layout.boardId);
 
