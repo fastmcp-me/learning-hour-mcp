@@ -127,6 +127,13 @@ Format your response as JSON with this exact structure:
         "type": "sticky_notes",
         "color": "light_pink", 
         "items": ["takeaway 1", "takeaway 2", "takeaway 3"]
+      },
+      {
+        "title": "Code Examples",
+        "type": "code_examples",
+        "language": "java",
+        "beforeCode": "// Example of problematic code\\nclass Example {\\n    // implementation with ${topic}\\n}",
+        "afterCode": "// Refactored code\\nclass Example {\\n    // improved implementation\\n}"
       }
     ]
   }
@@ -234,6 +241,23 @@ Make the code examples realistic and representative of real-world scenarios wher
     } catch (error) {
       throw new Error(`Failed to generate code example: ${error instanceof Error ? error.message : String(error)}`);
     }
+  }
+
+  async generateSessionWithCodeExamples(topic: string, style: string = 'slide', language: string = 'java'): Promise<SessionContent> {
+    const sessionContent = await this.generateSessionContent(topic, style);
+    const codeExample = await this.generateCodeExample(topic, language);
+    
+    const codeSection = {
+      title: 'Code Examples',
+      type: 'code_examples',
+      language: codeExample.language,
+      beforeCode: codeExample.beforeCode,
+      afterCode: codeExample.afterCode
+    };
+    
+    sessionContent.miroContent.sections.push(codeSection);
+    
+    return sessionContent;
   }
 
   private validateSessionContent(data: any): void {

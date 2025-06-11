@@ -24,6 +24,30 @@ interface MiroStickyNote {
   };
 }
 
+interface MiroCodeBlock {
+  id: string;
+  type: 'shape';
+  data: {
+    content: string;
+    shape: 'rectangle';
+  };
+  style: {
+    fillColor: string;
+    borderColor: string;
+    color: string;
+    fontFamily: string;
+    fontSize: number;
+  };
+  position: {
+    x: number;
+    y: number;
+  };
+  geometry: {
+    width: number;
+    height: number;
+  };
+}
+
 interface MiroTextFrame {
   id: string;
   type: 'text';
@@ -149,6 +173,59 @@ export class MiroIntegration {
     }
   }
 
+  async createCodeBlock(boardId: string, code: string, x: number, y: number, language: string = 'javascript', width: number = 500, height: number = 300): Promise<any> {
+    try {
+      const escapedCode = this.escapeHtml(code);
+      const content = `<pre style="font-family: 'Courier New', Consolas, monospace; background-color: #1e1e1e; color: #d4d4d4; padding: 16px; border-radius: 8px; overflow-x: auto; margin: 0; white-space: pre-wrap; line-height: 1.4;">${escapedCode}</pre>`;
+      
+      const response = await axios.post(`${this.miroApiUrl}/boards/${boardId}/items`, {
+        type: 'shape',
+        data: {
+          content: content,
+          shape: 'rectangle'
+        },
+        style: {
+          fillColor: '#1e1e1e',
+          fillOpacity: 1.0,
+          borderColor: '#3c3c3c',
+          borderWidth: 1,
+          borderOpacity: 1.0,
+          color: '#d4d4d4',
+          fontFamily: 'monospace',
+          fontSize: 12,
+          textAlign: 'left',
+          textAlignVertical: 'top'
+        },
+        position: {
+          x: x,
+          y: y
+        },
+        geometry: {
+          width: width,
+          height: height
+        }
+      }, {
+        headers: {
+          'authorization': `Bearer ${this.accessToken}`,
+          'content-type': 'application/json'
+        }
+      });
+
+      return response.data;
+    } catch (error) {
+      throw new Error(`Failed to create code block: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  private escapeHtml(text: string): string {
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   async createFrame(boardId: string, x: number, y: number, width: number, height: number, fillColor: string = 'transparent', borderWidth: number = 1): Promise<any> {
     try {
       const response = await axios.post(`${this.miroApiUrl}/boards/${boardId}/items`, {
@@ -236,6 +313,54 @@ export class MiroIntegration {
         if (section.title === 'Session Overview') {
           layout.sections.overview = contentFrame;
         }
+      } else if (section.type === 'code_block' && section.code) {
+        await this.createCodeBlock(
+          boardId,
+          section.code,
+          slideX,
+          slideY - 100,
+          section.language || 'javascript',
+          700,
+          300
+        );
+      } else if (section.type === 'code_examples' && section.beforeCode && section.afterCode) {
+        const beforeTitle = await this.createTextFrame(
+          boardId,
+          `<h4 style="font-size: 16px; font-weight: bold; margin: 0;">Before (${section.language || 'javascript'})</h4>`,
+          slideX - 200,
+          slideY - 250,
+          300,
+          30
+        );
+        
+        const afterTitle = await this.createTextFrame(
+          boardId,
+          `<h4 style="font-size: 16px; font-weight: bold; margin: 0;">After (${section.language || 'javascript'})</h4>`,
+          slideX + 200,
+          slideY - 250,
+          300,
+          30
+        );
+        
+        await this.createCodeBlock(
+          boardId,
+          section.beforeCode,
+          slideX - 200,
+          slideY - 50,
+          section.language || 'javascript',
+          350,
+          300
+        );
+        
+        await this.createCodeBlock(
+          boardId,
+          section.afterCode,
+          slideX + 200,
+          slideY - 50,
+          section.language || 'javascript',
+          350,
+          300
+        );
       } else if (section.type === 'sticky_notes' && section.items) {
         const stickyNotes = await this.createStickyNotesGrid(
           boardId, section.items, slideX, slideY, section.color ?? 'light_yellow'
@@ -279,6 +404,57 @@ export class MiroIntegration {
         if (section.title === 'Session Overview') {
           layout.sections.overview = textFrame;
         }
+        currentY += 200;
+      } else if (section.type === 'code_block' && section.code) {
+        await this.createCodeBlock(
+          boardId,
+          section.code,
+          -200,
+          sectionY,
+          section.language || 'javascript',
+          600,
+          300
+        );
+        currentY += 350;
+      } else if (section.type === 'code_examples' && section.beforeCode && section.afterCode) {
+        const beforeTitle = await this.createTextFrame(
+          boardId,
+          `<h4 style="font-size: 16px; font-weight: bold;">Before (${section.language || 'javascript'})</h4>`,
+          -500,
+          sectionY,
+          300,
+          30
+        );
+        
+        const afterTitle = await this.createTextFrame(
+          boardId,
+          `<h4 style="font-size: 16px; font-weight: bold;">After (${section.language || 'javascript'})</h4>`,
+          100,
+          sectionY,
+          300,
+          30
+        );
+        
+        await this.createCodeBlock(
+          boardId,
+          section.beforeCode,
+          -500,
+          sectionY + 50,
+          section.language || 'javascript',
+          350,
+          300
+        );
+        
+        await this.createCodeBlock(
+          boardId,
+          section.afterCode,
+          100,
+          sectionY + 50,
+          section.language || 'javascript',
+          350,
+          300
+        );
+        currentY += 400;
       } else if (section.type === 'sticky_notes' && section.items) {
         const stickyNotes: MiroStickyNote[] = [];
         let currentX = -400;
