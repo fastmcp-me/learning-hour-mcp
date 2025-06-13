@@ -48,14 +48,14 @@ export const sessionContentSchema = {
         style: { type: "string" },
         sections: {
           type: "array",
-          minItems: 5,
+          minItems: 3,
           items: {
             type: "object",
             properties: {
               title: { type: "string", minLength: 1 },
               type: { 
                 type: "string", 
-                enum: ["text_frame", "sticky_notes", "code_examples"] 
+                enum: ["text_frame", "sticky_notes", "code_examples", "timer"] 
               },
               content: { type: "string" },
               color: { type: "string" },
@@ -65,14 +65,25 @@ export const sessionContentSchema = {
               },
               language: { type: "string" },
               beforeCode: { type: "string" },
-              afterCode: { type: "string" }
+              afterCode: { type: "string" },
+              durations: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    activity: { type: "string" },
+                    minutes: { type: "number" }
+                  },
+                  required: ["activity", "minutes"]
+                }
+              }
             },
             required: ["title", "type"],
             additionalProperties: false
           }
         }
       },
-      required: ["boardTitle", "sections"],
+      required: ["boardTitle", "sections", "style"],
       additionalProperties: false
     }
   },

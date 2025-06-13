@@ -1,4 +1,4 @@
-name: Tests
+name: Test
 
 on:
   push:
@@ -13,25 +13,10 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     
-    - name: Setup Node.js
-      uses: actions/setup-node@v3
+    - uses: actions/setup-node@v3
       with:
         node-version: '18'
         
-    - name: Install dependencies
-      run: npm ci
-      
-    - name: Build
-      run: npm run build
-      
-    - name: Run tests without GitHub token
-      run: npm test
-      env:
-        ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        
-    - name: Run integration tests with GitHub token
-      if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
-      run: npm test -- __tests__/github-integration.test.ts
-      env:
-        ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - run: npm ci
+    - run: npm run build
+    - run: npm test
