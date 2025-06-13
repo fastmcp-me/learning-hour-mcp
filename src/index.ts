@@ -14,6 +14,7 @@ import { LearningHourGenerator } from "./LearningHourGenerator.js";
 import { RepositoryAnalyzer } from "./RepositoryAnalyzer.js";
 import { TechStackAnalyzer } from "./TechStackAnalyzer.js";
 import { GitHubMCPClient } from "./GitHubMCPClient.js";
+import { MiroIntegration } from "./MiroIntegration.js";
 
 const GenerateSessionInputSchema = z.object({
   topic: z.string().min(1, "Topic is required"),
@@ -34,12 +35,17 @@ const AnalyzeTechStackInputSchema = z.object({
   repositoryUrl: z.string().min(1, "Repository URL is required"),
 });
 
+const CreateMiroBoardInputSchema = z.object({
+  sessionContent: z.any(),
+});
+
 class LearningHourMCP {
   private server: Server;
   private generator: LearningHourGenerator;
   private repositoryAnalyzer: RepositoryAnalyzer;
   private techStackAnalyzer: TechStackAnalyzer;
   private githubClient: GitHubMCPClient;
+  private miroIntegration?: MiroIntegration;
 
   constructor() {
     this.generator = new LearningHourGenerator();
@@ -47,6 +53,7 @@ class LearningHourMCP {
     this.repositoryAnalyzer = new RepositoryAnalyzer(this.githubClient);
     this.techStackAnalyzer = new TechStackAnalyzer(this.githubClient);
     this.initializeGitHubClient();
+    this.initializeMiroIntegration();
     this.server = new Server(
       {
         name: "learning-hour-mcp",
@@ -73,6 +80,14 @@ class LearningHourMCP {
     }
   }
 
+  private initializeMiroIntegration() {
+    if (process.env.MIRO_ACCESS_TOKEN) {
+      this.miroIntegration = new MiroIntegration(process.env.MIRO_ACCESS_TOKEN);
+      console.error("Miro API integration initialized");
+    } else {
+      console.error("MIRO_ACCESS_TOKEN not set, Miro board creation will be unavailable");
+    }
+  }
 
   private setupToolHandlers() {
     this.server.setRequestHandler(ListToolsRequestSchema, async () => ({
@@ -113,6 +128,20 @@ class LearningHourMCP {
               },
             },
             required: ["topic"],
+          },
+        },
+        {
+          name: "create_miro_board",
+          description: "Create a Miro board from Learning Hour session content",
+          inputSchema: {
+            type: "object",
+            properties: {
+              sessionContent: {
+                type: "object",
+                description: "Session content from generate_session output",
+              },
+            },
+            required: ["sessionContent"],
           },
         },
         {
@@ -157,6 +186,8 @@ class LearningHourMCP {
             return await this.generateSession(request.params.arguments);
           case "generate_code_example":
             return await this.generateCodeExample(request.params.arguments);
+          case "create_miro_board":
+            return await this.createMiroBoard(request.params.arguments);
           case "analyze_repository":
             return await this.analyzeRepository(request.params.arguments);
           case "analyze_tech_stack":
@@ -222,6 +253,44 @@ class LearningHourMCP {
     }
   }
 
+  private async createMiroBoard(args: any) {
+    const input = CreateMiroBoardInputSchema.parse(args);
+    
+    try {
+      if (!this.miroIntegration) {
+        throw new Error('Miro integration not initialized. Ensure MIRO_ACCESS_TOKEN is set in the environment.');
+      }
+
+      const layout = await this.miroIntegration.createLearningHourBoard(input.sessionContent);
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: `✅ Miro board created successfully!`,
+          },
+          {
+            type: "text",
+            text: `Board Name: ${input.sessionContent.miroContent.boardTitle}`,
+          },
+          {
+            type: "text",
+            text: `Board ID: ${layout.boardId}`,
+          },
+          {
+            type: "text",
+            text: `View Link: ${layout.viewLink || 'https://miro.com/app/board/' + layout.boardId}`,
+          },
+          {
+            type: "text",
+            text: `\nThe board includes:\n- Overview section with session description\n- Learning objectives\n- 4C activities (Connect, Concept, Concrete, Conclusion)\n- Discussion prompts\n- Key takeaways`,
+          },
+        ],
+      };
+    } catch (error) {
+      throw new Error(`Failed to create Miro board: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
 
   private async analyzeRepository(args: any) {
     const input = AnalyzeRepositoryInputSchema.parse(args);
