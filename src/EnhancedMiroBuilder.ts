@@ -819,11 +819,23 @@ export class EnhancedMiroBuilder {
   }
 
   private extractBoardId(boardResult: any): string | null {
+    console.error('extractBoardId called with:', JSON.stringify(boardResult, null, 2));
+    
     try {
       const content = boardResult?.content?.[0]?.text;
+      console.error('Extracted content text:', content);
+      
+      if (!content) {
+        console.error('No content text found in result');
+        return null;
+      }
+      
       const match = content?.match(/Board ID: ([\w-]+)/);
+      console.error('Regex match result:', match);
+      
       return match?.[1] || null;
-    } catch {
+    } catch (error) {
+      console.error('Error in extractBoardId:', error);
       return null;
     }
   }

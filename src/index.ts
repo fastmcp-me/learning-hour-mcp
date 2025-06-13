@@ -73,6 +73,9 @@ class LearningHourMCP {
   }
 
   private async initializeMiroClient() {
+    console.error("Initializing Miro MCP client...");
+    console.error("MIRO_ACCESS_TOKEN present:", !!process.env.MIRO_ACCESS_TOKEN);
+    
     try {
       this.miroClient = new Client({
         name: "learning-hour-mcp-client",
@@ -90,13 +93,19 @@ class LearningHourMCP {
         }
       });
 
+      console.error("Connecting to Miro MCP server...");
       await this.miroClient.connect(transport);
-      console.error("Connected to Miro MCP server");
+      console.error("Connected to Miro MCP server successfully");
+      
+      // List available tools
+      const tools = await this.miroClient.listTools();
+      console.error("Available Miro tools:", tools.tools?.map(t => t.name).slice(0, 5), "...");
       
       // Initialize the enhanced Miro builder
       this.enhancedMiroBuilder = new EnhancedMiroBuilder(this.miroClient);
     } catch (error) {
       console.error("Failed to connect to Miro MCP:", error);
+      console.error("Error details:", error instanceof Error ? error.stack : error);
     }
   }
 
@@ -276,21 +285,31 @@ class LearningHourMCP {
   }
 
   private async createMiroBoard(args: any) {
+    console.error('createMiroBoard called with args:', JSON.stringify(args, null, 2));
     const input = CreateMiroBoardInputSchema.parse(args);
+    console.error('Parsed input:', JSON.stringify(input, null, 2));
     
     try {
       if (!this.miroClient || !this.enhancedMiroBuilder) {
+        console.error('Miro client status:', { 
+          miroClient: !!this.miroClient, 
+          enhancedMiroBuilder: !!this.enhancedMiroBuilder 
+        });
         throw new Error('Miro MCP client not initialized. Ensure MIRO_ACCESS_TOKEN is set in the environment.');
       }
 
+      console.error('Creating enhanced board with session content...');
       // Use the enhanced Miro builder for sophisticated board layouts
       const boardId = await this.enhancedMiroBuilder.createEnhancedBoard(input.sessionContent);
+      console.error('Board created with ID:', boardId);
 
       // Get the board view link
+      console.error('Getting board info for ID:', boardId);
       const boardInfo = await this.miroClient.callTool({
         name: "get-specific-board",
         arguments: { boardId }
       });
+      console.error('Board info response:', JSON.stringify(boardInfo, null, 2));
       const viewLink = ((boardInfo as any).content?.[0])?.text?.match(/View link: (https:\/\/[^\s]+)/)?.[1];
 
       return {
@@ -321,6 +340,8 @@ class LearningHourMCP {
         ],
       };
     } catch (error) {
+      console.error('Error in createMiroBoard:', error);
+      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack');
       throw new Error(`Failed to create Miro board: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
