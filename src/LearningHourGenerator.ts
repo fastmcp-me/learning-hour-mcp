@@ -1,4 +1,3 @@
-import axios from 'axios';
 
 interface LearningActivity {
   title: string;
@@ -185,22 +184,29 @@ Make the code examples realistic and representative of real-world scenarios wher
     const prompt = this.buildSessionPrompt(topic, style);
 
     try {
-      const response = await axios.post(this.anthropicApiUrl, {
-        model: this.model,
-        max_tokens: 3000,
-        messages: [{
-          role: 'user',
-          content: prompt
-        }]
-      }, {
+      const response = await fetch(this.anthropicApiUrl, {
+        method: 'POST',
         headers: {
           'content-type': 'application/json',
           'x-api-key': process.env.ANTHROPIC_API_KEY,
           'anthropic-version': '2023-06-01'
-        }
+        },
+        body: JSON.stringify({
+          model: this.model,
+          max_tokens: 3000,
+          messages: [{
+            role: 'user',
+            content: prompt
+          }]
+        })
       });
 
-      const content = response.data.content[0].text;
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json() as { content: Array<{ text: string }> };
+      const content = data.content[0].text;
       const sessionData = JSON.parse(content);
       this.validateSessionContent(sessionData);
 
@@ -218,22 +224,29 @@ Make the code examples realistic and representative of real-world scenarios wher
     const prompt = this.buildCodeExamplePrompt(topic, language);
 
     try {
-      const response = await axios.post(this.anthropicApiUrl, {
-        model: this.model,
-        max_tokens: 2000,
-        messages: [{
-          role: 'user',
-          content: prompt
-        }]
-      }, {
+      const response = await fetch(this.anthropicApiUrl, {
+        method: 'POST',
         headers: {
           'content-type': 'application/json',
           'x-api-key': process.env.ANTHROPIC_API_KEY,
           'anthropic-version': '2023-06-01'
-        }
+        },
+        body: JSON.stringify({
+          model: this.model,
+          max_tokens: 2000,
+          messages: [{
+            role: 'user',
+            content: prompt
+          }]
+        })
       });
 
-      const content = response.data.content[0].text;
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json() as { content: Array<{ text: string }> };
+      const content = data.content[0].text;
       const exampleData = JSON.parse(content);
       this.validateCodeExample(exampleData);
 

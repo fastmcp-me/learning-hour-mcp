@@ -16,7 +16,6 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
-    "axios": "^1.6.0",
     "dotenv": "^16.5.0",
     "zod": "^3.22.0"
   },
@@ -29,11 +28,11 @@
     "code-smells",
     "refactoring"
   ],
-  "author": "",
+  "author": "Steven Diamante",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/learning-hour-mcp.git"
+    "url": "https://github.com/SDiamante13/learning-hour-mcp.git"
   },
   "engines": {
     "node": ">=16.0.0"
