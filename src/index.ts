@@ -15,6 +15,7 @@ import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 import { LearningHourGenerator } from "./LearningHourGenerator.js";
 import { RepositoryAnalyzer } from "./RepositoryAnalyzer.js";
 import { TechStackAnalyzer } from "./TechStackAnalyzer.js";
+import { EnhancedMiroBuilder } from "./EnhancedMiroBuilder.js";
 
 const GenerateSessionInputSchema = z.object({
   topic: z.string().min(1, "Topic is required"),
@@ -45,6 +46,7 @@ class LearningHourMCP {
   private repositoryAnalyzer: RepositoryAnalyzer;
   private techStackAnalyzer: TechStackAnalyzer;
   private miroClient?: Client;
+  private enhancedMiroBuilder?: EnhancedMiroBuilder;
 
   constructor() {
     this.generator = new LearningHourGenerator();
@@ -86,6 +88,9 @@ class LearningHourMCP {
 
       await this.miroClient.connect(transport);
       console.error("Connected to Miro MCP server");
+      
+      // Initialize the enhanced Miro builder
+      this.enhancedMiroBuilder = new EnhancedMiroBuilder(this.miroClient);
     } catch (error) {
       console.error("Failed to connect to Miro MCP:", error);
     }
@@ -260,60 +265,12 @@ class LearningHourMCP {
     const input = CreateMiroBoardInputSchema.parse(args);
     
     try {
-      if (!this.miroClient) {
+      if (!this.miroClient || !this.enhancedMiroBuilder) {
         throw new Error('Miro MCP client not initialized. Ensure MIRO_ACCESS_TOKEN is set in the environment.');
       }
 
-      // First, create the board using miro-mcp
-      const boardResult = await this.miroClient.callTool({
-        name: "create_board",
-        arguments: {
-          name: input.sessionContent.miroContent.boardTitle,
-          description: `Learning Hour: ${input.sessionContent.topic}`
-        }
-      });
-
-      const boardId = ((boardResult as any).content?.[0])?.text?.match(/Board ID: ([\w-]+)/)?.[1];
-      if (!boardId) {
-        throw new Error('Failed to extract board ID from Miro response');
-      }
-
-      // Now create all the content on the board
-      const { sections } = input.sessionContent.miroContent;
-      let currentX = 0;
-      let currentY = 0;
-
-      for (const section of sections) {
-        if (section.type === 'sticky_notes' && Array.isArray(section.content)) {
-          // Create sticky notes
-          for (const note of section.content) {
-            await this.miroClient.callTool({
-              name: "create_sticky_note",
-              arguments: {
-                boardId,
-                text: note,
-                xPosition: currentX,
-                yPosition: currentY
-              }
-            });
-            currentX += 250;
-          }
-          currentY += 200;
-          currentX = 0;
-        } else if (section.type === 'text') {
-          // Create text item
-          await this.miroClient.callTool({
-            name: "create_text",
-            arguments: {
-              boardId,
-              text: section.content,
-              xPosition: currentX,
-              yPosition: currentY
-            }
-          });
-          currentY += 150;
-        }
-      }
+      // Use the enhanced Miro builder for sophisticated board layouts
+      const boardId = await this.enhancedMiroBuilder.createEnhancedBoard(input.sessionContent);
 
       // Get the board view link
       const boardInfo = await this.miroClient.callTool({
@@ -326,7 +283,18 @@ class LearningHourMCP {
         content: [
           {
             type: "text",
-            text: `✅ Miro board created successfully!`,
+            text: `✅ Enhanced Miro board created successfully!`,
+          },
+          {
+            type: "text",
+            text: `🎨 Board features:
+- Visual 4C Learning Model flow
+- Color-coded sections for each phase
+- Interactive participant workspaces
+- Timer widgets for time management
+- Facilitator dashboard and notes
+- Code demo areas with syntax highlighting
+- Commitment wall for action items`,
           },
           {
             type: "text",

@@ -45,24 +45,27 @@ export const sessionContentSchema = {
       type: "object",
       properties: {
         boardTitle: { type: "string", minLength: 1 },
+        style: { type: "string" },
         sections: {
           type: "array",
           minItems: 5,
-          maxItems: 5,
           items: {
             type: "object",
             properties: {
               title: { type: "string", minLength: 1 },
               type: { 
                 type: "string", 
-                enum: ["text_frame", "sticky_notes"] 
+                enum: ["text_frame", "sticky_notes", "code_examples"] 
               },
               content: { type: "string" },
               color: { type: "string" },
               items: {
                 type: "array",
                 items: { type: "string" }
-              }
+              },
+              language: { type: "string" },
+              beforeCode: { type: "string" },
+              afterCode: { type: "string" }
             },
             required: ["title", "type"],
             additionalProperties: false
@@ -82,17 +85,65 @@ export const codeExampleSchema = {
   properties: {
     topic: { type: "string", minLength: 1 },
     language: { type: "string", minLength: 1 },
-    beforeCode: { type: "string", minLength: 10 },
-    afterCode: { type: "string", minLength: 10 },
-    problemExplanation: { type: "string", minLength: 10 },
-    solutionExplanation: { type: "string", minLength: 10 },
-    additionalOpportunities: {
+    context: { type: "string", minLength: 10 },
+    problemStatement: { type: "string", minLength: 10 },
+    learningHourConnection: { type: "string", minLength: 10 },
+    refactoringSteps: {
+      type: "array",
+      minItems: 2,
+      items: {
+        type: "object",
+        properties: {
+          stepNumber: { type: "number", minimum: 1 },
+          description: { type: "string", minLength: 5 },
+          code: { type: "string", minLength: 10 },
+          testCode: { type: "string", minLength: 10 },
+          codeSmells: {
+            type: "array",
+            minItems: 1,
+            items: { type: "string", minLength: 3 }
+          },
+          improvements: {
+            type: "array",
+            minItems: 1,
+            items: { type: "string", minLength: 3 }
+          },
+          facilitationTip: { type: "string", minLength: 10 }
+        },
+        required: ["stepNumber", "description", "code", "codeSmells", "improvements", "facilitationTip"],
+        additionalProperties: false
+      }
+    },
+    additionalExercises: {
       type: "array",
       minItems: 1,
-      items: { type: "string", minLength: 5 }
+      items: { type: "string", minLength: 10 }
+    },
+    facilitationNotes: {
+      type: "object",
+      properties: {
+        timeAllocation: { type: "string", minLength: 5 },
+        commonMistakes: {
+          type: "array",
+          minItems: 1,
+          items: { type: "string", minLength: 10 }
+        },
+        discussionPoints: {
+          type: "array",
+          minItems: 1,
+          items: { type: "string", minLength: 10 }
+        },
+        pairProgrammingTips: {
+          type: "array",
+          minItems: 1,
+          items: { type: "string", minLength: 10 }
+        }
+      },
+      required: ["timeAllocation", "commonMistakes", "discussionPoints", "pairProgrammingTips"],
+      additionalProperties: false
     }
   },
-  required: ["topic", "language", "beforeCode", "afterCode", "problemExplanation", "solutionExplanation", "additionalOpportunities"],
+  required: ["topic", "language", "context", "problemStatement", "learningHourConnection", "refactoringSteps", "additionalExercises", "facilitationNotes"],
   additionalProperties: false
 };
 
