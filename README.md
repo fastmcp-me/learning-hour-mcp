@@ -166,7 +166,7 @@ Create a [GitHub Personal Access Token](https://github.com/settings/tokens/new):
 
 ## Learn More
 
-- [Diamante Technical Coaching](https://diamantetechcoaching.com/)
+- [Diamante Technical Coaching](https://diamantetechcoaching.com/) - [Refactor to Grow Newsletter](https://subscribepage.io/refactor-to-grow)
 - [SammanCoaching.org](https://sammancoaching.org/) - Technical coaching resources and Learning Hour guides
 - [Learning Hours](https://sammancoaching.org/learning_hours/index.html) - Catalog of Learning Hour topics
 - [4C Learning Model](https://sammancoaching.org/society/index.html) - Connect, Concept, Concrete, Conclusion

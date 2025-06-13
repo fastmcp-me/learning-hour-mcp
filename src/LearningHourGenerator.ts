@@ -412,7 +412,7 @@ CRITICAL DETAILS:
     try {
       const message = await this.client.messages.create({
         model: this.model,
-        max_tokens: 2000,
+        max_tokens: 4000,
         messages: [{
           role: 'user',
           content: prompt
@@ -424,7 +424,15 @@ CRITICAL DETAILS:
         throw new Error('No text content in response');
       }
       const content = textContent.text;
-      const exampleData = JSON.parse(content);
+      console.error('Raw response:', content.substring(0, 200) + '...');
+      
+      // Try to extract JSON from the response
+      const jsonMatch = content.match(/\{[\s\S]*\}$/);
+      if (!jsonMatch) {
+        throw new Error('No valid JSON found in response');
+      }
+      
+      const exampleData = JSON.parse(jsonMatch[0]);
       this.validateCodeExample(exampleData);
 
       return exampleData;
