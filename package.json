@@ -1,6 +1,6 @@
 {
   "name": "learning-hour-mcp",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "MCP server for generating Learning Hour content and Miro boards for Technical Coaches",
   "main": "dist/index.js",
   "bin": {
