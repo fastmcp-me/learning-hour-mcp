@@ -65,7 +65,7 @@ export class EnhancedMiroBuilder {
     try {
       // Create the board
       const boardResult = await this.miroClient.callTool({
-        name: "create_board",
+        name: "create-board",
         arguments: {
           name: sessionContent.miroContent.boardTitle,
           description: `Learning Hour: ${sessionContent.topic}\n\n${sessionContent.sessionOverview}`
@@ -131,7 +131,7 @@ export class EnhancedMiroBuilder {
   private async createHeaderFrame(boardId: string, sessionContent: SessionContent, position: MiroPosition) {
     // Create main title
     await this.miroClient.callTool({
-      name: "create_text",
+      name: "create-text-item",
       arguments: {
         boardId,
         text: `🎯 Learning Hour: ${sessionContent.topic}`,
@@ -145,7 +145,7 @@ export class EnhancedMiroBuilder {
 
     // Create subtitle
     await this.miroClient.callTool({
-      name: "create_text",
+      name: "create-text-item",
       arguments: {
         boardId,
         text: "Technical Excellence Through Deliberate Practice",
@@ -159,7 +159,7 @@ export class EnhancedMiroBuilder {
 
     // Create session overview
     await this.miroClient.callTool({
-      name: "create_shape",
+      name: "create-shape-item",
       arguments: {
         boardId,
         shapeType: "rectangle",
@@ -186,7 +186,7 @@ export class EnhancedMiroBuilder {
     let yOffset = 0;
     for (const item of navItems) {
       await this.miroClient.callTool({
-        name: "create_shape",
+        name: "create-shape-item",
         arguments: {
           boardId,
           shapeType: "rounded_rectangle",
@@ -222,7 +222,7 @@ export class EnhancedMiroBuilder {
     let xOffset = 100;
     for (const instruction of instructions) {
       await this.miroClient.callTool({
-        name: "create_sticky_note",
+        name: "create-sticky-note-item",
         arguments: {
           boardId,
           text: instruction,
@@ -279,7 +279,7 @@ export class EnhancedMiroBuilder {
     let yOffset = 200;
     for (const step of steps) {
       await this.miroClient.callTool({
-        name: "create_shape",
+        name: "create-shape-item",
         arguments: {
           boardId,
           shapeType: "rectangle",
@@ -321,7 +321,7 @@ export class EnhancedMiroBuilder {
     let xOffset = 100;
     for (const prompt of reflectionPrompts) {
       await this.miroClient.callTool({
-        name: "create_shape",
+        name: "create-shape-item",
         arguments: {
           boardId,
           shapeType: "rounded_rectangle",
@@ -350,7 +350,7 @@ export class EnhancedMiroBuilder {
     let xOffset = 100;
     for (const takeaway of sessionContent.keyTakeaways) {
       await this.miroClient.callTool({
-        name: "create_sticky_note",
+        name: "create-sticky-note-item",
         arguments: {
           boardId,
           text: `✅ ${takeaway}`,
@@ -378,7 +378,7 @@ export class EnhancedMiroBuilder {
     xOffset = 100;
     for (const step of nextSteps) {
       await this.miroClient.callTool({
-        name: "create_sticky_note",
+        name: "create-sticky-note-item",
         arguments: {
           boardId,
           text: step,
@@ -394,7 +394,7 @@ export class EnhancedMiroBuilder {
   private async createFacilitatorDashboard(boardId: string, position: MiroPosition) {
     // Create facilitator frame
     await this.miroClient.callTool({
-      name: "create_shape",
+      name: "create-shape-item",
       arguments: {
         boardId,
         shapeType: "rectangle",
@@ -424,7 +424,7 @@ export class EnhancedMiroBuilder {
     let yOffset = 150;
     for (const item of checklist) {
       await this.miroClient.callTool({
-        name: "create_text",
+        name: "create-text-item",
         arguments: {
           boardId,
           text: item,
@@ -438,7 +438,7 @@ export class EnhancedMiroBuilder {
 
     // Common challenges section
     await this.miroClient.callTool({
-      name: "create_text",
+      name: "create-text-item",
       arguments: {
         boardId,
         text: "⚠️ Common Challenges:",
@@ -458,7 +458,7 @@ export class EnhancedMiroBuilder {
     yOffset = 650;
     for (const challenge of challenges) {
       await this.miroClient.callTool({
-        name: "create_text",
+        name: "create-text-item",
         arguments: {
           boardId,
           text: challenge,
@@ -475,7 +475,7 @@ export class EnhancedMiroBuilder {
 
   private async createSectionTitle(boardId: string, title: string, position: MiroPosition, color: MiroColor) {
     await this.miroClient.callTool({
-      name: "create_shape",
+      name: "create-shape-item",
       arguments: {
         boardId,
         shapeType: "rectangle",
@@ -493,7 +493,7 @@ export class EnhancedMiroBuilder {
 
   private async createTimer(boardId: string, duration: string, position: MiroPosition) {
     await this.miroClient.callTool({
-      name: "create_shape",
+      name: "create-shape-item",
       arguments: {
         boardId,
         shapeType: "circle",
@@ -518,7 +518,7 @@ export class EnhancedMiroBuilder {
   ) {
     // Instruction text
     await this.miroClient.callTool({
-      name: "create_text",
+      name: "create-text-item",
       arguments: {
         boardId,
         text: instruction,
@@ -534,7 +534,7 @@ export class EnhancedMiroBuilder {
     let yOffset = 100;
     for (let i = 0; i < stickyCount; i++) {
       await this.miroClient.callTool({
-        name: "create_sticky_note",
+        name: "create-sticky-note-item",
         arguments: {
           boardId,
           text: "",
@@ -558,7 +558,7 @@ export class EnhancedMiroBuilder {
     if (codeSection && codeSection.beforeCode) {
       // Before code
       await this.miroClient.callTool({
-        name: "create_shape",
+        name: "create-shape-item",
         arguments: {
           boardId,
           shapeType: "rectangle",
@@ -576,7 +576,7 @@ export class EnhancedMiroBuilder {
 
       // Arrow
       await this.miroClient.callTool({
-        name: "create_shape",
+        name: "create-shape-item",
         arguments: {
           boardId,
           shapeType: "arrow",
@@ -591,7 +591,7 @@ export class EnhancedMiroBuilder {
       // After code
       if (codeSection.afterCode) {
         await this.miroClient.callTool({
-          name: "create_shape",
+          name: "create-shape-item",
           arguments: {
             boardId,
             shapeType: "rectangle",
@@ -613,7 +613,7 @@ export class EnhancedMiroBuilder {
   private async createConceptsArea(boardId: string, sessionContent: SessionContent, position: MiroPosition) {
     // Central concept
     await this.miroClient.callTool({
-      name: "create_shape",
+      name: "create-shape-item",
       arguments: {
         boardId,
         shapeType: "circle",
@@ -639,7 +639,7 @@ export class EnhancedMiroBuilder {
       const y = position.y + 200 + radius * Math.sin(angle);
 
       await this.miroClient.callTool({
-        name: "create_shape",
+        name: "create-shape-item",
         arguments: {
           boardId,
           shapeType: "rounded_rectangle",
@@ -657,7 +657,7 @@ export class EnhancedMiroBuilder {
 
   private async createQuestionsArea(boardId: string, position: MiroPosition) {
     await this.miroClient.callTool({
-      name: "create_text",
+      name: "create-text-item",
       arguments: {
         boardId,
         text: "❓ Questions Parking Lot - Add your questions here:",
@@ -670,7 +670,7 @@ export class EnhancedMiroBuilder {
     // Create empty sticky notes for questions
     for (let i = 0; i < 6; i++) {
       await this.miroClient.callTool({
-        name: "create_sticky_note",
+        name: "create-sticky-note-item",
         arguments: {
           boardId,
           text: "",
@@ -692,7 +692,7 @@ export class EnhancedMiroBuilder {
 
       // Create workspace frame
       await this.miroClient.callTool({
-        name: "create_shape",
+        name: "create-shape-item",
         arguments: {
           boardId,
           shapeType: "rectangle",
@@ -708,7 +708,7 @@ export class EnhancedMiroBuilder {
 
       // Add workspace elements
       await this.miroClient.callTool({
-        name: "create_text",
+        name: "create-text-item",
         arguments: {
           boardId,
           text: "💻 Code here",
@@ -719,7 +719,7 @@ export class EnhancedMiroBuilder {
       });
 
       await this.miroClient.callTool({
-        name: "create_text",
+        name: "create-text-item",
         arguments: {
           boardId,
           text: "📝 Notes",
@@ -740,7 +740,7 @@ export class EnhancedMiroBuilder {
     let xOffset = 0;
     for (const section of exerciseSections) {
       await this.miroClient.callTool({
-        name: "create_shape",
+        name: "create-shape-item",
         arguments: {
           boardId,
           shapeType: "rectangle",
@@ -756,7 +756,7 @@ export class EnhancedMiroBuilder {
 
       if (section.content) {
         await this.miroClient.callTool({
-          name: "create_text",
+          name: "create-text-item",
           arguments: {
             boardId,
             text: section.content,
@@ -774,7 +774,7 @@ export class EnhancedMiroBuilder {
 
   private async createCommitmentWall(boardId: string, position: MiroPosition) {
     await this.miroClient.callTool({
-      name: "create_text",
+      name: "create-text-item",
       arguments: {
         boardId,
         text: "🎯 COMMITMENT WALL - Add your commitment here:",
@@ -788,7 +788,7 @@ export class EnhancedMiroBuilder {
     for (let row = 0; row < 4; row++) {
       for (let col = 0; col < 6; col++) {
         await this.miroClient.callTool({
-          name: "create_sticky_note",
+          name: "create-sticky-note-item",
           arguments: {
             boardId,
             text: "",

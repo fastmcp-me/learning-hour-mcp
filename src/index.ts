@@ -288,7 +288,7 @@ class LearningHourMCP {
 
       // Get the board view link
       const boardInfo = await this.miroClient.callTool({
-        name: "get_board",
+        name: "get-specific-board",
         arguments: { boardId }
       });
       const viewLink = ((boardInfo as any).content?.[0])?.text?.match(/View link: (https:\/\/[^\s]+)/)?.[1];
