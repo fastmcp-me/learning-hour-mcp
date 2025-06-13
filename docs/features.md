@@ -2,7 +2,8 @@
 
 ## Repository Analysis for Team-Specific Learning Hours
 
-The Learning Hour MCP now includes powerful repository analysis features that allow Claude to create highly contextual, team-specific Learning Hour content using your actual codebase.
+The Learning Hour MCP now includes powerful repository analysis features that allow Claude to create highly contextual,
+team-specific Learning Hour content using your actual codebase.
 
 ### Available MCP Tools
 

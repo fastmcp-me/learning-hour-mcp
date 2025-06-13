@@ -1,10 +1,14 @@
 # Learning Hour MCP Product Backlog
 
 ## Product Vision
-Extend Claude's capabilities to create highly contextual, team-specific Learning Hour content by integrating with development workflows and providing adaptive learning intelligence.
+Extend Claude's capabilities to create highly contextual,
+team-specific Learning Hour content by integrating with development 
+workflows and providing adaptive learning intelligence.
 
 ## MCP Architecture Context
-This is an **MCP server** that provides tools to Claude Desktop and other AI assistants. Features must:
+This is an **MCP server** that provides tools to Claude Desktop and other AI assistants. 
+
+Features must:
 - Work through conversational interfaces (no UIs or dashboards)
 - Provide tools/functions that Claude can invoke
 - Return structured data that Claude can interpret and present

@@ -10,7 +10,8 @@ import {
   McpError,
 } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
-import { MiroIntegration } from "./MiroIntegration.js";
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { LearningHourGenerator } from "./LearningHourGenerator.js";
 import { RepositoryAnalyzer } from "./RepositoryAnalyzer.js";
 import { TechStackAnalyzer } from "./TechStackAnalyzer.js";
@@ -43,11 +44,13 @@ class LearningHourMCP {
   private generator: LearningHourGenerator;
   private repositoryAnalyzer: RepositoryAnalyzer;
   private techStackAnalyzer: TechStackAnalyzer;
+  private miroClient?: Client;
 
   constructor() {
     this.generator = new LearningHourGenerator();
     this.repositoryAnalyzer = new RepositoryAnalyzer();
     this.techStackAnalyzer = new TechStackAnalyzer();
+    this.initializeMiroClient();
     this.server = new Server(
       {
         name: "learning-hour-mcp",
@@ -61,6 +64,31 @@ class LearningHourMCP {
     );
 
     this.setupToolHandlers();
+  }
+
+  private async initializeMiroClient() {
+    try {
+      this.miroClient = new Client({
+        name: "learning-hour-mcp-client",
+        version: "1.0.0"
+      }, {
+        capabilities: {}
+      });
+
+      const transport = new StdioClientTransport({
+        command: "npx",
+        args: ["-y", "@k-jarzyna/mcp-miro"],
+        env: {
+          ...process.env,
+          MIRO_ACCESS_TOKEN: process.env.MIRO_ACCESS_TOKEN || ""
+        }
+      });
+
+      await this.miroClient.connect(transport);
+      console.error("Connected to Miro MCP server");
+    } catch (error) {
+      console.error("Failed to connect to Miro MCP:", error);
+    }
   }
 
 
@@ -107,7 +135,7 @@ class LearningHourMCP {
         },
         {
           name: "create_miro_board",
-          description: "Create a Miro board from Learning Hour session content (requires valid MIRO_ACCESS_TOKEN)",
+          description: "Create a Miro board from Learning Hour session content",
           inputSchema: {
             type: "object",
             properties: {
@@ -232,13 +260,67 @@ class LearningHourMCP {
     const input = CreateMiroBoardInputSchema.parse(args);
     
     try {
-      if (!process.env.MIRO_ACCESS_TOKEN) {
-        throw new Error('MIRO_ACCESS_TOKEN environment variable is required');
+      if (!this.miroClient) {
+        throw new Error('Miro MCP client not initialized. Ensure MIRO_ACCESS_TOKEN is set in the environment.');
       }
 
-      const miro = new MiroIntegration(process.env.MIRO_ACCESS_TOKEN);
-      const layout = await miro.createLearningHourBoard(input.sessionContent);
-      const viewLink = await miro.getBoardViewLink(layout.boardId);
+      // First, create the board using miro-mcp
+      const boardResult = await this.miroClient.callTool({
+        name: "create_board",
+        arguments: {
+          name: input.sessionContent.miroContent.boardTitle,
+          description: `Learning Hour: ${input.sessionContent.topic}`
+        }
+      });
+
+      const boardId = ((boardResult as any).content?.[0])?.text?.match(/Board ID: ([\w-]+)/)?.[1];
+      if (!boardId) {
+        throw new Error('Failed to extract board ID from Miro response');
+      }
+
+      // Now create all the content on the board
+      const { sections } = input.sessionContent.miroContent;
+      let currentX = 0;
+      let currentY = 0;
+
+      for (const section of sections) {
+        if (section.type === 'sticky_notes' && Array.isArray(section.content)) {
+          // Create sticky notes
+          for (const note of section.content) {
+            await this.miroClient.callTool({
+              name: "create_sticky_note",
+              arguments: {
+                boardId,
+                text: note,
+                xPosition: currentX,
+                yPosition: currentY
+              }
+            });
+            currentX += 250;
+          }
+          currentY += 200;
+          currentX = 0;
+        } else if (section.type === 'text') {
+          // Create text item
+          await this.miroClient.callTool({
+            name: "create_text",
+            arguments: {
+              boardId,
+              text: section.content,
+              xPosition: currentX,
+              yPosition: currentY
+            }
+          });
+          currentY += 150;
+        }
+      }
+
+      // Get the board view link
+      const boardInfo = await this.miroClient.callTool({
+        name: "get_board",
+        arguments: { boardId }
+      });
+      const viewLink = ((boardInfo as any).content?.[0])?.text?.match(/View link: (https:\/\/[^\s]+)/)?.[1];
 
       return {
         content: [
@@ -248,11 +330,11 @@ class LearningHourMCP {
           },
           {
             type: "text",
-            text: `Board ID: ${layout.boardId}`,
+            text: `Board ID: ${boardId}`,
           },
           {
             type: "text",
-            text: `View Link: ${viewLink}`,
+            text: `View Link: ${viewLink || 'https://miro.com/app/board/' + boardId}`,
           },
         ],
       };

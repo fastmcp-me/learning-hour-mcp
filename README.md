@@ -17,8 +17,8 @@ This MCP server supports the **4C Learning Model** (Connect → Concept → Conc
 
 - **Generate Session Content**: Creates comprehensive Learning Hour materials for any coding topic
 - **Generate Code Examples**: Produces before/after code examples with explanations
-- **Miro Integration**: Direct integration with Miro API to create visual Learning Hour boards
-- **OAuth Support**: Complete OAuth flow for Miro authentication
+- **Miro Integration**: Uses the @k-jarzyna/mcp-miro server to create visual Learning Hour boards
+- **MCP-to-MCP Communication**: Demonstrates server-to-server MCP communication patterns
 
 ## Tools
 
@@ -45,42 +45,72 @@ Creates detailed before/after code examples for learning topics.
 }
 ```
 
-### `get_miro_auth_url`
-Generates a Miro OAuth authorization URL for obtaining access tokens.
-
-**Input:**
-```json
-{
-  "redirectUri": "http://localhost:3000/callback",
-  "state": "optional-security-state"
-}
-```
-
-### `test_miro_token`
-Tests if a Miro access token is valid and working.
-
-**Input:**
-```json
-{
-  "accessToken": "your_miro_access_token"
-}
-```
-
 ### `create_miro_board`
-Creates a Miro board with Learning Hour content automatically laid out.
+Creates a Miro board with Learning Hour content by communicating with the @k-jarzyna/mcp-miro server.
 
 **Input:**
 ```json
 {
-  "sessionContent": {}, // Output from generate_session
-  "accessToken": "your_miro_access_token"
+  "sessionContent": {} // Output from generate_session
 }
 ```
 
-## Setup
+### `analyze_repository`
+Analyzes a GitHub repository to find real code examples for Learning Hours.
 
-1. Install dependencies:
+**Input:**
+```json
+{
+  "repositoryUrl": "https://github.com/owner/repo",
+  "codeSmell": "Feature Envy"
+}
+```
+
+### `analyze_tech_stack`
+Analyzes a repository's technology stack to create team-specific Learning Hour content.
+
+**Input:**
+```json
+{
+  "repositoryUrl": "https://github.com/owner/repo"
+}
+```
+
+## Installation
+
+### Quick Start with npx (Recommended)
+
+The easiest way to use Learning Hour MCP is directly through npx:
+
+1. Add to your Claude Desktop configuration:
+   - macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+   - Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "learning-hour": {
+      "command": "npx",
+      "args": ["-y", "learning-hour-mcp"],
+      "env": {
+        "ANTHROPIC_API_KEY": "your-api-key-here",
+        "MIRO_ACCESS_TOKEN": "your-miro-token-here"
+      }
+    }
+  }
+}
+```
+
+2. Restart Claude Desktop to load the MCP server.
+
+### Local Development Setup
+
+For development or customization:
+
+1. Clone and install:
 ```bash
+git clone https://github.com/yourusername/learning-hour-mcp.git
+cd learning-hour-mcp
 npm install
 ```
 
@@ -101,18 +131,30 @@ cp .env.example .env
      ANTHROPIC_API_KEY=your_actual_api_key_here
      ```
 
-   **Miro Integration (Optional):**
-   - Visit [Miro Developers](https://developers.miro.com/)
-   - Create a new app to get Client ID and Client Secret
-   - Add to your `.env` file:
-     ```
-     MIRO_CLIENT_ID=your_miro_client_id
-     MIRO_CLIENT_SECRET=your_miro_client_secret
-     ```
+   **Miro Integration:**
+   - This MCP uses the @k-jarzyna/mcp-miro server for Miro operations
+   - Ensure you have MIRO_ACCESS_TOKEN configured in your Claude Desktop settings
+   - The learning-hour-mcp will automatically connect to the miro-mcp server
 
-4. Build and run:
+4. Build the project:
 ```bash
-npm run build && npm start
+npm run build
+```
+
+5. Add to Claude Desktop configuration with local path:
+```json
+{
+  "mcpServers": {
+    "learning-hour-dev": {
+      "command": "node",
+      "args": ["/path/to/learning-hour-mcp/dist/index.js"],
+      "env": {
+        "ANTHROPIC_API_KEY": "your-api-key-here",
+        "MIRO_ACCESS_TOKEN": "your-miro-token-here"
+      }
+    }
+  }
+}
 ```
 
 ## Testing
@@ -129,74 +171,26 @@ npm run test:integration
 
 **Note**: Integration tests require a valid `ANTHROPIC_API_KEY` in your `.env` file and will make real API calls.
 
-## Miro Integration Workflow
+## MCP-to-MCP Communication
 
-### Getting a Miro Access Token
+This server demonstrates MCP-to-MCP communication patterns by acting as a client to the @k-jarzyna/mcp-miro server. When you use the `create_miro_board` tool, the learning-hour-mcp:
 
-To use Miro integration, you need a valid access token. Here are two ways:
+1. Spawns the miro-mcp server as a subprocess
+2. Establishes a client connection using stdio transport
+3. Calls miro-mcp tools to create boards and add content
+4. Returns the aggregated results
 
-#### Option A: Quick Personal Access Token (Easiest)
-1. Go to [Miro Developer Portal](https://developers.miro.com/reference/oauth-2.0)
-2. Create a developer account
-3. Create a new app
-4. Generate a personal access token
-5. Test it: `test_miro_token {"accessToken": "your_token"}`
+This architecture provides:
+- **Clean separation of concerns** - Learning content generation vs Miro API operations
+- **Reusability** - Both MCPs can be used independently
+- **Composability** - MCPs can be chained together for complex workflows
 
-#### Option B: OAuth Flow (For Production)
-1. **Get Authorization URL**:
-```json
-{
-  "tool": "get_miro_auth_url",
-  "arguments": {
-    "redirectUri": "http://localhost:3000/callback"
-  }
-}
-```
-
-2. Visit the URL, authorize, and exchange the code for a token
-
-### Using Miro Integration
-
-1. **Test Your Token**:
-```json
-{
-  "tool": "test_miro_token",
-  "arguments": {
-    "accessToken": "your_miro_access_token"
-  }
-}
-```
-
-2. **Generate Learning Session**:
-```json
-{
-  "tool": "generate_session",
-  "arguments": {
-    "topic": "Feature Envy"
-  }
-}
-```
-
-3. **Create Miro Board**:
-```json
-{
-  "tool": "create_miro_board",
-  "arguments": {
-    "sessionContent": {}, // Use output from step 2
-    "accessToken": "your_miro_access_token"
-  }
-}
-```
-
-### Option 2: Manual Miro Integration
-
-You can also use the structured `miroContent` output from `generate_session` with other Miro tools or the Miro web interface.
+For detailed MCP-to-MCP communication patterns, see [examples/mcp-to-mcp-communication/mcp-to-mcp-patterns.md](./examples/mcp-to-mcp-communication/mcp-to-mcp-patterns.md).
 
 ## Environment Variables
 
 - `ANTHROPIC_API_KEY`: Required - your Anthropic API key for generating Learning Hour content
-- `MIRO_CLIENT_ID`: Optional - your Miro app client ID for OAuth authentication
-- `MIRO_CLIENT_SECRET`: Optional - your Miro app client secret for OAuth authentication
+- `MIRO_ACCESS_TOKEN`: Required for Miro integration - passed to the miro-mcp server
 
 ## Usage Examples
 
@@ -239,3 +233,20 @@ Teams practicing Learning Hours experience:
 - Reduced technical debt
 
 > "Continuous attention to technical excellence and good design enhances agility" - The 9th principle of the Agile Manifesto
+
+## Publishing to npm
+
+For maintainers who want to publish updates:
+
+1. Update version in package.json
+2. Build and test:
+   ```bash
+   npm run build
+   npm test
+   ```
+3. Publish to npm:
+   ```bash
+   npm publish
+   ```
+
+The `prepublishOnly` script will automatically build the project before publishing.

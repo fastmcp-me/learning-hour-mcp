@@ -3,7 +3,11 @@
   "version": "1.0.0",
   "description": "MCP server for generating Learning Hour content and Miro boards for Technical Coaches",
   "main": "dist/index.js",
+  "bin": {
+    "learning-hour-mcp": "./dist/index.js"
+  },
   "scripts": {
+    "prepublishOnly": "npm run build",
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "tsx src/index.ts",
@@ -16,6 +20,29 @@
     "dotenv": "^16.5.0",
     "zod": "^3.22.0"
   },
+  "keywords": [
+    "mcp",
+    "mcp-server",
+    "learning-hour",
+    "technical-coaching",
+    "miro",
+    "code-smells",
+    "refactoring"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/learning-hour-mcp.git"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "files": [
+    "dist/**/*",
+    "README.md",
+    "LICENSE"
+  ],
   "devDependencies": {
     "@types/jest": "^29.5.14",
     "@types/node": "^20.0.0",
