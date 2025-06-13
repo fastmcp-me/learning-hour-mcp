@@ -10,13 +10,9 @@ import {
   McpError,
 } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { LearningHourGenerator } from "./LearningHourGenerator.js";
 import { RepositoryAnalyzer } from "./RepositoryAnalyzer.js";
 import { TechStackAnalyzer } from "./TechStackAnalyzer.js";
-import { EnhancedMiroBuilder } from "./EnhancedMiroBuilder.js";
-import { SimpleMiroBuilder } from "./SimpleMiroBuilder.js";
 import { GitHubMCPClient } from "./GitHubMCPClient.js";
 
 const GenerateSessionInputSchema = z.object({
@@ -27,10 +23,6 @@ const GenerateSessionInputSchema = z.object({
 const GenerateCodeExampleInputSchema = z.object({
   topic: z.string().min(1, "Topic is required"),
   language: z.string().optional().default("javascript"),
-});
-
-const CreateMiroBoardInputSchema = z.object({
-  sessionContent: z.any(),
 });
 
 const AnalyzeRepositoryInputSchema = z.object({
@@ -47,9 +39,6 @@ class LearningHourMCP {
   private generator: LearningHourGenerator;
   private repositoryAnalyzer: RepositoryAnalyzer;
   private techStackAnalyzer: TechStackAnalyzer;
-  private miroClient?: Client;
-  private enhancedMiroBuilder?: EnhancedMiroBuilder;
-  private simpleMiroBuilder?: SimpleMiroBuilder;
   private githubClient: GitHubMCPClient;
 
   constructor() {
@@ -57,7 +46,6 @@ class LearningHourMCP {
     this.githubClient = new GitHubMCPClient();
     this.repositoryAnalyzer = new RepositoryAnalyzer(this.githubClient);
     this.techStackAnalyzer = new TechStackAnalyzer(this.githubClient);
-    this.initializeMiroClient();
     this.initializeGitHubClient();
     this.server = new Server(
       {
@@ -74,43 +62,6 @@ class LearningHourMCP {
     this.setupToolHandlers();
   }
 
-  private async initializeMiroClient() {
-    console.error("Initializing Miro MCP client...");
-    console.error("MIRO_ACCESS_TOKEN present:", !!process.env.MIRO_ACCESS_TOKEN);
-    
-    try {
-      this.miroClient = new Client({
-        name: "learning-hour-mcp-client",
-        version: "1.0.0"
-      }, {
-        capabilities: {}
-      });
-
-      const transport = new StdioClientTransport({
-        command: "npx",
-        args: ["-y", "@k-jarzyna/mcp-miro"],
-        env: {
-          ...process.env,
-          MIRO_ACCESS_TOKEN: process.env.MIRO_ACCESS_TOKEN || ""
-        }
-      });
-
-      console.error("Connecting to Miro MCP server...");
-      await this.miroClient.connect(transport);
-      console.error("Connected to Miro MCP server successfully");
-      
-      // List available tools
-      const tools = await this.miroClient.listTools();
-      console.error("Available Miro tools:", tools.tools?.map(t => t.name).slice(0, 5), "...");
-      
-      // Initialize the enhanced Miro builder
-      this.enhancedMiroBuilder = new EnhancedMiroBuilder(this.miroClient);
-      this.simpleMiroBuilder = new SimpleMiroBuilder(this.miroClient);
-    } catch (error) {
-      console.error("Failed to connect to Miro MCP:", error);
-      console.error("Error details:", error instanceof Error ? error.stack : error);
-    }
-  }
 
   private async initializeGitHubClient() {
     try {
@@ -165,20 +116,6 @@ class LearningHourMCP {
           },
         },
         {
-          name: "create_miro_board",
-          description: "Create a Miro board from Learning Hour session content",
-          inputSchema: {
-            type: "object",
-            properties: {
-              sessionContent: {
-                type: "object",
-                description: "Session content from generate_session output",
-              },
-            },
-            required: ["sessionContent"],
-          },
-        },
-        {
           name: "analyze_repository",
           description: "Analyze a GitHub repository to find real code examples for Learning Hours",
           inputSchema: {
@@ -220,8 +157,6 @@ class LearningHourMCP {
             return await this.generateSession(request.params.arguments);
           case "generate_code_example":
             return await this.generateCodeExample(request.params.arguments);
-          case "create_miro_board":
-            return await this.createMiroBoard(request.params.arguments);
           case "analyze_repository":
             return await this.analyzeRepository(request.params.arguments);
           case "analyze_tech_stack":
@@ -287,67 +222,6 @@ class LearningHourMCP {
     }
   }
 
-  private async createMiroBoard(args: any) {
-    console.error('createMiroBoard called with args:', JSON.stringify(args, null, 2));
-    const input = CreateMiroBoardInputSchema.parse(args);
-    console.error('Parsed input:', JSON.stringify(input, null, 2));
-    
-    try {
-      if (!this.miroClient || !this.simpleMiroBuilder) {
-        console.error('Miro client status:', { 
-          miroClient: !!this.miroClient, 
-          simpleMiroBuilder: !!this.simpleMiroBuilder 
-        });
-        throw new Error('Miro MCP client not initialized. Ensure MIRO_ACCESS_TOKEN is set in the environment.');
-      }
-
-      console.error('Creating board with simple Miro builder...');
-      // Use the simple Miro builder that just creates frames
-      const boardId = await this.simpleMiroBuilder.createSimpleBoard(input.sessionContent);
-      console.error('Board created with ID:', boardId);
-
-      // Get the board view link
-      console.error('Getting board info for ID:', boardId);
-      const boardInfo = await this.miroClient.callTool({
-        name: "get-specific-board",
-        arguments: { boardId }
-      });
-      console.error('Board info response:', JSON.stringify(boardInfo, null, 2));
-      const viewLink = ((boardInfo as any).content?.[0])?.text?.match(/View link: (https:\/\/[^\s]+)/)?.[1];
-
-      return {
-        content: [
-          {
-            type: "text",
-            text: `✅ Enhanced Miro board created successfully!`,
-          },
-          {
-            type: "text",
-            text: `🎨 Board features:
-- Visual 4C Learning Model flow
-- Color-coded sections for each phase
-- Interactive participant workspaces
-- Timer widgets for time management
-- Facilitator dashboard and notes
-- Code demo areas with syntax highlighting
-- Commitment wall for action items`,
-          },
-          {
-            type: "text",
-            text: `Board ID: ${boardId}`,
-          },
-          {
-            type: "text",
-            text: `View Link: ${viewLink || 'https://miro.com/app/board/' + boardId}`,
-          },
-        ],
-      };
-    } catch (error) {
-      console.error('Error in createMiroBoard:', error);
-      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack');
-      throw new Error(`Failed to create Miro board: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
 
   private async analyzeRepository(args: any) {
     const input = AnalyzeRepositoryInputSchema.parse(args);
