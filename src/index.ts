@@ -16,6 +16,7 @@ import { LearningHourGenerator } from "./LearningHourGenerator.js";
 import { RepositoryAnalyzer } from "./RepositoryAnalyzer.js";
 import { TechStackAnalyzer } from "./TechStackAnalyzer.js";
 import { EnhancedMiroBuilder } from "./EnhancedMiroBuilder.js";
+import { GitHubMCPClient } from "./GitHubMCPClient.js";
 
 const GenerateSessionInputSchema = z.object({
   topic: z.string().min(1, "Topic is required"),
@@ -47,12 +48,15 @@ class LearningHourMCP {
   private techStackAnalyzer: TechStackAnalyzer;
   private miroClient?: Client;
   private enhancedMiroBuilder?: EnhancedMiroBuilder;
+  private githubClient: GitHubMCPClient;
 
   constructor() {
     this.generator = new LearningHourGenerator();
-    this.repositoryAnalyzer = new RepositoryAnalyzer();
-    this.techStackAnalyzer = new TechStackAnalyzer();
+    this.githubClient = new GitHubMCPClient();
+    this.repositoryAnalyzer = new RepositoryAnalyzer(this.githubClient);
+    this.techStackAnalyzer = new TechStackAnalyzer(this.githubClient);
     this.initializeMiroClient();
+    this.initializeGitHubClient();
     this.server = new Server(
       {
         name: "learning-hour-mcp",
@@ -93,6 +97,16 @@ class LearningHourMCP {
       this.enhancedMiroBuilder = new EnhancedMiroBuilder(this.miroClient);
     } catch (error) {
       console.error("Failed to connect to Miro MCP:", error);
+    }
+  }
+
+  private async initializeGitHubClient() {
+    try {
+      await this.githubClient.connect();
+      console.error("GitHub MCP client initialized successfully");
+    } catch (error) {
+      console.error("Failed to initialize GitHub MCP client:", error);
+      console.error("Repository analysis will use fallback mode");
     }
   }
 
@@ -334,7 +348,43 @@ class LearningHourMCP {
         ],
       };
     } catch (error) {
-      throw new Error(`Failed to analyze repository: ${error instanceof Error ? error.message : String(error)}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      
+      if (errorMessage.includes('GitHub integration not configured')) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `❌ GitHub integration not configured`,
+            },
+            {
+              type: "text",
+              text: `To use repository analysis, please set GITHUB_TOKEN in your environment.`,
+            },
+            {
+              type: "text",
+              text: `Visit https://github.com/settings/tokens to create a personal access token with 'repo' scope.`,
+            },
+          ],
+        };
+      }
+      
+      if (errorMessage.includes('No examples')) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `⚠️ No examples found`,
+            },
+            {
+              type: "text",
+              text: errorMessage,
+            },
+          ],
+        };
+      }
+      
+      throw new Error(`Failed to analyze repository: ${errorMessage}`);
     }
   }
 
@@ -365,7 +415,43 @@ class LearningHourMCP {
         ],
       };
     } catch (error) {
-      throw new Error(`Failed to analyze tech stack: ${error instanceof Error ? error.message : String(error)}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      
+      if (errorMessage.includes('GitHub integration not configured')) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `❌ GitHub integration not configured`,
+            },
+            {
+              type: "text",
+              text: `To use tech stack analysis, please set GITHUB_TOKEN in your environment.`,
+            },
+            {
+              type: "text",
+              text: `Visit https://github.com/settings/tokens to create a personal access token with 'repo' scope.`,
+            },
+          ],
+        };
+      }
+      
+      if (errorMessage.includes('Unable to analyze tech stack')) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `⚠️ Unable to analyze repository`,
+            },
+            {
+              type: "text",
+              text: errorMessage,
+            },
+          ],
+        };
+      }
+      
+      throw new Error(`Failed to analyze tech stack: ${errorMessage}`);
     }
   }
 

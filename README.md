@@ -56,7 +56,9 @@ Creates a Miro board with Learning Hour content by communicating with the @k-jar
 ```
 
 ### `analyze_repository`
-Analyzes a GitHub repository to find real code examples for Learning Hours.
+Analyzes a GitHub repository to find real code examples for Learning Hours. Uses GitHub MCP integration to search for specific code patterns.
+
+**Requirements:** Requires `GITHUB_TOKEN` environment variable to be set.
 
 **Input:**
 ```json
@@ -66,8 +68,12 @@ Analyzes a GitHub repository to find real code examples for Learning Hours.
 }
 ```
 
+**Output:** List of code examples with file paths, line numbers, and confidence scores.
+
 ### `analyze_tech_stack`
-Analyzes a repository's technology stack to create team-specific Learning Hour content.
+Analyzes a repository's technology stack to create team-specific Learning Hour content. Examines package.json, build files, and repository structure.
+
+**Requirements:** Requires `GITHUB_TOKEN` environment variable to be set.
 
 **Input:**
 ```json
@@ -75,6 +81,8 @@ Analyzes a repository's technology stack to create team-specific Learning Hour c
   "repositoryUrl": "https://github.com/owner/repo"
 }
 ```
+
+**Output:** Technology profile including languages, frameworks, testing tools, and architectural patterns.
 
 ## Installation
 
@@ -94,7 +102,8 @@ The easiest way to use Learning Hour MCP is directly through npx:
       "args": ["-y", "learning-hour-mcp"],
       "env": {
         "ANTHROPIC_API_KEY": "your-api-key-here",
-        "MIRO_ACCESS_TOKEN": "your-miro-token-here"
+        "MIRO_ACCESS_TOKEN": "your-miro-token-here",
+        "GITHUB_TOKEN": "your-github-token-here"
       }
     }
   }
@@ -136,6 +145,12 @@ cp .env.example .env
    - Ensure you have MIRO_ACCESS_TOKEN configured in your Claude Desktop settings
    - The learning-hour-mcp will automatically connect to the miro-mcp server
 
+   **GitHub Integration (Required for repository analysis):**
+   - Required for `analyze_repository` and `analyze_tech_stack` tools
+   - Visit [GitHub Settings > Developer settings > Personal access tokens](https://github.com/settings/tokens)
+   - Generate a new token with `repo` scope
+   - Add it to your environment as `GITHUB_TOKEN`
+
 4. Build the project:
 ```bash
 npm run build
@@ -150,7 +165,8 @@ npm run build
       "args": ["/path/to/learning-hour-mcp/dist/index.js"],
       "env": {
         "ANTHROPIC_API_KEY": "your-api-key-here",
-        "MIRO_ACCESS_TOKEN": "your-miro-token-here"
+        "MIRO_ACCESS_TOKEN": "your-miro-token-here",
+        "GITHUB_TOKEN": "your-github-token-here"
       }
     }
   }
@@ -191,6 +207,7 @@ For detailed MCP-to-MCP communication patterns, see [examples/mcp-to-mcp-communi
 
 - `ANTHROPIC_API_KEY`: Required - your Anthropic API key for generating Learning Hour content
 - `MIRO_ACCESS_TOKEN`: Required for Miro integration - passed to the miro-mcp server
+- `GITHUB_TOKEN`: Required for repository analysis features (`analyze_repository` and `analyze_tech_stack` tools)
 
 ## Usage Examples
 
