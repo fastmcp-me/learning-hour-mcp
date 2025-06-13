@@ -183,9 +183,34 @@ npm test
 
 # Run only integration tests
 npm run test:integration
+
+# Run only GitHub integration tests
+npm run test:github
 ```
 
-**Note**: Integration tests require a valid `ANTHROPIC_API_KEY` in your `.env` file and will make real API calls.
+### Setting up GitHub Token for Integration Tests
+
+The GitHub integration tests can run in two modes:
+
+1. **Without GitHub Token**: Tests will verify error handling and skip actual API calls
+2. **With GitHub Token**: Tests will make real API calls to GitHub
+
+To run tests with GitHub integration:
+
+```bash
+# Set token for current session
+export GITHUB_TOKEN=your_github_token_here
+npm test
+
+# Or use .env file
+echo "GITHUB_TOKEN=your_github_token_here" >> .env
+npm test
+```
+
+**Note**: 
+- Integration tests require a valid `ANTHROPIC_API_KEY` in your `.env` file and will make real API calls
+- GitHub integration tests are automatically skipped if `GITHUB_TOKEN` is not set
+- In CI/CD, the `GITHUB_TOKEN` is automatically provided by GitHub Actions
 
 ## MCP-to-MCP Communication
 

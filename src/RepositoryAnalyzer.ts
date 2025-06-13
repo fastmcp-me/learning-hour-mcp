@@ -18,19 +18,6 @@ export interface AnalysisResult {
   repositoryUrl: string;
 }
 
-export interface RefactoringExample {
-  before: string;
-  after: string;
-  explanation: string;
-  preservesStyle: boolean;
-  sessionContent: string;
-}
-
-export interface AnonymizedExample {
-  anonymizedCode: string;
-  isSafeToUse: boolean;
-  flaggedElements: string[];
-}
 
 export class RepositoryAnalyzer {
   private githubClient: GitHubMCPClient;
@@ -226,38 +213,4 @@ export class RepositoryAnalyzer {
   }
 
 
-  async generateRefactoringExample(example: CodeExample): Promise<RefactoringExample> {
-    return {
-      before: `// src/UserService.java\npublic class UserService {\n  ${example.codeSnippet}\n}`,
-      after: `// src/UserService.java\npublic class UserService {\n  public void updateUser(User user) {\n    updateAccount(user);\n    updateProfile(user);\n  }\n  \n  private void updateAccount(User user) {\n    user.getAccount().setBalance(calculateNewBalance());\n  }\n  \n  private void updateProfile(User user) {\n    user.getProfile().updateLastLogin();\n  }\n}`,
-      explanation: 'Extracted methods to reduce Feature Envy by keeping related operations together',
-      preservesStyle: true,
-      sessionContent: 'Let\'s improve our UserService class by addressing Feature Envy code smell'
-    };
-  }
-
-  async anonymizeExample(code: string): Promise<AnonymizedExample> {
-    const flaggedElements: string[] = [];
-    let anonymizedCode = code;
-
-    // Pattern matching for sensitive data
-    const sensitivePatterns = [
-      { pattern: /"sk_live_[^"]+"/g, replacement: '"PLACEHOLDER_API_KEY"', description: 'API key' },
-      { pattern: /"\d{3}-\d{2}-\d{4}"/g, replacement: '"XXX-XX-XXXX"', description: 'SSN' },
-      { pattern: /"[^"]*\.bank\.com"/g, replacement: '"PLACEHOLDER_HOST"', description: 'Internal host' }
-    ];
-
-    sensitivePatterns.forEach(({ pattern, replacement, description }) => {
-      if (pattern.test(code)) {
-        flaggedElements.push(description);
-        anonymizedCode = anonymizedCode.replace(pattern, replacement);
-      }
-    });
-
-    return {
-      anonymizedCode,
-      isSafeToUse: true,
-      flaggedElements
-    };
-  }
 }

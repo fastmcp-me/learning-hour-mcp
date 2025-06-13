@@ -462,9 +462,3 @@ TECHNICAL IMPLEMENTATION NOTES:
 - Include zoom presets for each major section
 `;
 
-export function enhanceMiroPrompt(basePrompt: string): string {
-  return basePrompt.replace(
-    /MIRO BOARD REQUIREMENTS[^}]+}/,
-    ENHANCED_MIRO_BOARD_PROMPT
-  );
-}

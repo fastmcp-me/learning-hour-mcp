@@ -27,9 +27,7 @@ export class GitHubMCPClient {
 
       await this.client.connect(transport);
       this.isConnected = true;
-      console.error("Connected to GitHub MCP server");
     } catch (error) {
-      console.error("Failed to connect to GitHub MCP:", error);
       throw error;
     }
   }
@@ -69,7 +67,7 @@ export class GitHubMCPClient {
     }
 
     return await this.client.callTool({
-      name: "list_repo_contents",
+      name: "get_file_contents",
       arguments: {
         owner,
         repo,
@@ -83,11 +81,12 @@ export class GitHubMCPClient {
       throw new Error("GitHub MCP client not connected");
     }
 
+    // The GitHub MCP server doesn't have a get_repo tool, so we'll search for the repo instead
     return await this.client.callTool({
-      name: "get_repo",
+      name: "search_repositories",
       arguments: {
-        owner,
-        repo
+        query: `repo:${owner}/${repo}`,
+        perPage: 1
       }
     });
   }

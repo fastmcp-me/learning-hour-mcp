@@ -12,7 +12,8 @@
     "start": "node dist/index.js",
     "dev": "tsx src/index.ts",
     "test": "jest",
-    "test:integration": "jest __tests__/integration.test.ts"
+    "test:integration": "jest __tests__/integration.test.ts",
+    "test:github": "jest __tests__/github-integration.test.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.54.0",

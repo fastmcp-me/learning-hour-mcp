@@ -9,12 +9,6 @@ export interface TechStackProfile {
   packageDependencies: string[];
 }
 
-export interface StackSpecificContent {
-  examples: string;
-  testExamples: string;
-  refactoringOpportunities: string;
-  packageReferences: string;
-}
 
 export class TechStackAnalyzer {
   private githubClient: GitHubMCPClient;
@@ -35,8 +29,9 @@ export class TechStackAnalyzer {
         await this.analyzeConfigFiles(owner, repo, configFiles);
       const architecturalPatterns = await this.detectArchitecturalPatterns(owner, repo);
 
-      if (primaryLanguages.length === 0 && frameworks.length === 0) {
-        throw new Error(`Unable to analyze tech stack for ${repositoryUrl}. Ensure the repository exists and is accessible.`);
+      // Always return something, even if we couldn't find specific details
+      if (primaryLanguages.length === 0) {
+        primaryLanguages.push('Unknown');
       }
 
       return {
@@ -115,18 +110,24 @@ export class TechStackAnalyzer {
   private extractLanguages(repoInfo: any): string[] {
     try {
       const text = (repoInfo as any)?.content?.[0]?.text;
-      if (!text) return ['JavaScript'];
+      if (!text) return [];
       
       const parsed = JSON.parse(text);
       const languages: string[] = [];
       
-      if (parsed.language) {
+      // Handle search results format
+      if (parsed.items && parsed.items.length > 0) {
+        const repo = parsed.items[0];
+        if (repo.language) {
+          languages.push(repo.language);
+        }
+      } else if (parsed.language) {
         languages.push(parsed.language);
       }
       
-      return languages.length > 0 ? languages : ['JavaScript'];
+      return languages;
     } catch {
-      return ['JavaScript'];
+      return [];
     }
   }
 
@@ -325,12 +326,4 @@ export class TechStackAnalyzer {
   }
 
 
-  async generateStackSpecificContent(topic: string, techProfile: TechStackProfile): Promise<StackSpecificContent> {
-    return {
-      examples: `Express route handlers demonstrating ${topic} principles with middleware patterns`,
-      testExamples: `Jest testing examples that match existing test structure for ${topic}`,
-      refactoringOpportunities: `Node.js-specific ${topic} refactoring opportunities`,
-      packageReferences: `Using lodash for ${topic} implementations`
-    };
-  }
 }
