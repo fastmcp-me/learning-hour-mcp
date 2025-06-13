@@ -1,98 +1,29 @@
-# Learning Hour MCP
+# learning-hour-mcp
 
-An MCP server that generates comprehensive Learning Hour content for Technical Coaches, enabling teams to practice technical excellence through structured deliberate practice sessions. Works seamlessly with the Miro MCP for creating interactive boards.
+Generate Learning Hour content for Technical Coaches using AI. Create structured practice sessions that help development teams master technical excellence through the 4C Learning Model.
 
-## Philosophy
+## What is this?
 
-Learning Hours are structured practice sessions where software teams develop technical excellence skills through deliberate practice. Just as athletes and pilots dedicate time to practice their craft, software developers need dedicated time to master fundamental programming practices that stand the test of time.
+An MCP server that helps Technical Coaches run Learning Hours - structured 60-minute practice sessions where teams improve their coding skills through deliberate practice. It generates session plans, code examples, and can even create interactive Miro boards.
 
-This MCP server supports the **4C Learning Model** (Connect → Concept → Concrete → Conclusion) and focuses on technical practices that enhance agility:
-- Test Driven Development (TDD)
-- Refactoring techniques
-- Clean code principles
-- Evolutionary design
-- Pairing/ensemble programming
+## Who is this for?
 
-## Features
-
-- **Generate Session Content**: Creates comprehensive Learning Hour materials for any coding topic
-- **Generate Code Examples**: Produces before/after code examples with explanations
-- **Miro Integration**: Uses the @k-jarzyna/mcp-miro server to create visual Learning Hour boards
-- **MCP-to-MCP Communication**: Demonstrates server-to-server MCP communication patterns
-
-## Tools
-
-### `generate_session`
-Generates comprehensive Learning Hour content including objectives, activities, and discussion prompts.
-
-**Input:**
-```json
-{
-  "topic": "Feature Envy"
-}
-```
-
-**Output:** Structured session data with `miroContent` section ready for Miro board creation.
-
-### `generate_code_example`
-Creates detailed before/after code examples for learning topics.
-
-**Input:**
-```json
-{
-  "topic": "Feature Envy",
-  "language": "javascript"
-}
-```
-
-### `create_miro_board`
-Creates a Miro board with Learning Hour content by communicating with the @k-jarzyna/mcp-miro server.
-
-**Input:**
-```json
-{
-  "sessionContent": {} // Output from generate_session
-}
-```
-
-### `analyze_repository`
-Analyzes a GitHub repository to find real code examples for Learning Hours. Uses GitHub MCP integration to search for specific code patterns.
-
-**Requirements:** Requires `GITHUB_TOKEN` environment variable to be set.
-
-**Input:**
-```json
-{
-  "repositoryUrl": "https://github.com/owner/repo",
-  "codeSmell": "Feature Envy"
-}
-```
-
-**Output:** List of code examples with file paths, line numbers, and confidence scores.
-
-### `analyze_tech_stack`
-Analyzes a repository's technology stack to create team-specific Learning Hour content. Examines package.json, build files, and repository structure.
-
-**Requirements:** Requires `GITHUB_TOKEN` environment variable to be set.
-
-**Input:**
-```json
-{
-  "repositoryUrl": "https://github.com/owner/repo"
-}
-```
-
-**Output:** Technology profile including languages, frameworks, testing tools, and architectural patterns.
+- **Technical Coaches** facilitating team learning sessions
+- **Team Leads** wanting to improve their team's technical practices
+- **Developers** organizing coding dojos or practice sessions
 
 ## Installation
 
-### Quick Start with npx (Recommended)
+### Prerequisites
+1. [Claude Desktop](https://claude.ai/download) - Install the desktop app
+2. [Anthropic API Key](https://console.anthropic.com/settings/keys) - Sign up and create a key ($5 free credit for new accounts)
 
-The easiest way to use Learning Hour MCP is directly through npx:
+### Complete Setup
 
-1. Add to your Claude Desktop configuration:
-   - macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
-   - Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+Choose your preferred editor:
+
+#### Claude Desktop
+Add to your Claude Desktop configuration:
 
 ```json
 {
@@ -101,194 +32,158 @@ The easiest way to use Learning Hour MCP is directly through npx:
       "command": "npx",
       "args": ["-y", "learning-hour-mcp"],
       "env": {
-        "ANTHROPIC_API_KEY": "your-api-key-here",
-        "MIRO_ACCESS_TOKEN": "your-miro-token-here",
-        "GITHUB_TOKEN": "your-github-token-here"
+        "ANTHROPIC_API_KEY": "your-anthropic-key",
+        "MIRO_ACCESS_TOKEN": "your-miro-token-optional",
+        "GITHUB_TOKEN": "your-github-token-optional"
       }
     }
   }
 }
 ```
 
-2. Restart Claude Desktop to load the MCP server.
+**Configuration steps:**
+1. Open Claude Desktop settings (cmd/ctrl + ,)
+2. Go to "Developer" → "Edit Config"
+3. Paste the configuration above
+4. Replace `your-anthropic-key` with your actual key
+5. Save and restart Claude Desktop
 
-### Local Development Setup
+#### VSCode
+Add to your VSCode settings.json:
 
-For development or customization:
-
-1. Clone and install:
-```bash
-git clone https://github.com/yourusername/learning-hour-mcp.git
-cd learning-hour-mcp
-npm install
+```json
+{
+  "mcp.servers": {
+    "learning-hour": {
+      "command": "npx",
+      "args": ["-y", "learning-hour-mcp"],
+      "env": {
+        "ANTHROPIC_API_KEY": "your-anthropic-key",
+        "MIRO_ACCESS_TOKEN": "your-miro-token-optional",
+        "GITHUB_TOKEN": "your-github-token-optional"
+      }
+    }
+  }
+}
 ```
 
-2. Configure environment variables:
-```bash
-cp .env.example .env
-# Edit .env and add your Anthropic API key
-```
+**Configuration steps:**
+1. Install the [MCP VSCode Extension](https://marketplace.visualstudio.com/items?itemName=modelcontextprotocol.mcp)
+2. Open settings.json (Cmd/Ctrl+Shift+P → "Preferences: Open Settings (JSON)")
+3. Add the configuration above
+4. Replace tokens with your actual values
+5. Reload VSCode window (Cmd/Ctrl+Shift+P → "Developer: Reload Window")
 
-3. Get your API keys:
+#### Cursor
+Add to your Cursor configuration:
 
-   **Anthropic API Key:**
-   - Visit [Anthropic Console](https://console.anthropic.com/)
-   - Create an account or sign in
-   - Generate an API key
-   - Add it to your `.env` file:
-     ```
-     ANTHROPIC_API_KEY=your_actual_api_key_here
-     ```
-
-   **Miro Integration:**
-   - This MCP uses the @k-jarzyna/mcp-miro server for Miro operations
-   - Ensure you have MIRO_ACCESS_TOKEN configured in your Claude Desktop settings
-   - The learning-hour-mcp will automatically connect to the miro-mcp server
-
-   **GitHub Integration (Required for repository analysis):**
-   - Required for `analyze_repository` and `analyze_tech_stack` tools
-   - Visit [GitHub Settings > Developer settings > Personal access tokens](https://github.com/settings/tokens)
-   - Generate a new token with `repo` scope
-   - Add it to your environment as `GITHUB_TOKEN`
-
-4. Build the project:
-```bash
-npm run build
-```
-
-5. Add to Claude Desktop configuration with local path:
 ```json
 {
   "mcpServers": {
-    "learning-hour-dev": {
-      "command": "node",
-      "args": ["/path/to/learning-hour-mcp/dist/index.js"],
+    "learning-hour": {
+      "command": "npx",
+      "args": ["-y", "learning-hour-mcp"],
       "env": {
-        "ANTHROPIC_API_KEY": "your-api-key-here",
-        "MIRO_ACCESS_TOKEN": "your-miro-token-here",
-        "GITHUB_TOKEN": "your-github-token-here"
+        "ANTHROPIC_API_KEY": "your-anthropic-key",
+        "MIRO_ACCESS_TOKEN": "your-miro-token-optional",
+        "GITHUB_TOKEN": "your-github-token-optional"
       }
     }
   }
 }
 ```
 
-## Testing
+**Configuration steps:**
+1. Open Cursor settings (Cmd/Ctrl + ,)
+2. Click on "Features" → "Claude" → "Advanced"
+3. Add the MCP server configuration
+4. Replace tokens with your actual values
+5. Restart Cursor
 
-Run the integration tests to verify your API connection:
+**Required**: Only `ANTHROPIC_API_KEY` is required. The other tokens enable additional features.
 
-```bash
-# Run all tests
-npm test
+## Quick Start
 
-# Run only integration tests
-npm run test:integration
+After installation, try this in Claude:
 
-# Run only GitHub integration tests
-npm run test:github
-```
+> "Use the learning hour tools to create a session about the Extract Method refactoring"
 
-### Setting up GitHub Token for Integration Tests
+Claude will generate a complete 60-minute session plan with:
+- Opening connection activity
+- Concept introduction 
+- Hands-on coding exercise
+- Reflection and commitment
 
-The GitHub integration tests can run in two modes:
+## Available Tools
 
-1. **Without GitHub Token**: Tests will verify error handling and skip actual API calls
-2. **With GitHub Token**: Tests will make real API calls to GitHub
+### `generate_session`
+Generate a complete Learning Hour session plan with activities following the 4C model (Connect, Concept, Concrete, Conclusion).
 
-To run tests with GitHub integration:
-
-```bash
-# Set token for current session
-export GITHUB_TOKEN=your_github_token_here
-npm test
-
-# Or use .env file
-echo "GITHUB_TOKEN=your_github_token_here" >> .env
-npm test
-```
-
-**Note**: 
-- Integration tests require a valid `ANTHROPIC_API_KEY` in your `.env` file and will make real API calls
-- GitHub integration tests are automatically skipped if `GITHUB_TOKEN` is not set
-- In CI/CD, the `GITHUB_TOKEN` is automatically provided by GitHub Actions
-
-## MCP-to-MCP Communication
-
-This server demonstrates MCP-to-MCP communication patterns by acting as a client to the @k-jarzyna/mcp-miro server. When you use the `create_miro_board` tool, the learning-hour-mcp:
-
-1. Spawns the miro-mcp server as a subprocess
-2. Establishes a client connection using stdio transport
-3. Calls miro-mcp tools to create boards and add content
-4. Returns the aggregated results
-
-This architecture provides:
-- **Clean separation of concerns** - Learning content generation vs Miro API operations
-- **Reusability** - Both MCPs can be used independently
-- **Composability** - MCPs can be chained together for complex workflows
-
-For detailed MCP-to-MCP communication patterns, see [examples/mcp-to-mcp-communication/mcp-to-mcp-patterns.md](./examples/mcp-to-mcp-communication/mcp-to-mcp-patterns.md).
-
-## Environment Variables
-
-- `ANTHROPIC_API_KEY`: Required - your Anthropic API key for generating Learning Hour content
-- `MIRO_ACCESS_TOKEN`: Required for Miro integration - passed to the miro-mcp server
-- `GITHUB_TOKEN`: Required for repository analysis features (`analyze_repository` and `analyze_tech_stack` tools)
-
-## Usage Examples
-
-**Generate a complete Learning Hour:**
 ```json
 {
-  "tool": "generate_session",
-  "arguments": {
-    "topic": "Single Responsibility Principle"
-  }
+  "topic": "Feature Envy"
 }
 ```
 
-**Create code examples:**
+### `generate_code_example`
+Create before/after code examples for a specific topic.
+
 ```json
 {
-  "tool": "generate_code_example", 
-  "arguments": {
-    "topic": "Feature Envy",
-    "language": "python"
-  }
+  "topic": "Extract Method",
+  "language": "typescript"
 }
 ```
 
-The output includes structured content perfect for Technical Coaches to run effective Learning Hours with hands-on exercises and group discussions.
+### `create_miro_board`
+Transform session content into an interactive Miro board (requires `MIRO_ACCESS_TOKEN`).
 
-## Documentation
+### `analyze_repository`
+Find real code examples in GitHub repositories (requires `GITHUB_TOKEN`).
 
-- [Learning Hours Guide](./docs/LEARNING_HOURS.md) - Comprehensive guide to Learning Hours philosophy and implementation
-- [Domain Vocabulary](./docs/DOMAIN_VOCABULARY.md) - Key terms and concepts used in Learning Hours
-- [Coding Style Guidelines](./docs/CODING_STYLE.md) - Code style aligned with clean code principles
+### `analyze_tech_stack`
+Analyze a repository's technology stack to create team-specific content (requires `GITHUB_TOKEN`).
 
-## Learning Outcomes
+## Optional Features
 
-Teams practicing Learning Hours experience:
-- Frequent deployments with minimal defects
-- Faster development velocity  
-- Higher quality software delivery
-- Improved team morale and collaboration
-- Reduced technical debt
+### Enable Miro Board Creation
+*Transform your Learning Hour into a visual, interactive workshop board*
 
-> "Continuous attention to technical excellence and good design enhances agility" - The 9th principle of the Agile Manifesto
+Get a Miro token:
+- Go to [Miro Apps](https://miro.com/app/settings/apps)
+- Create a new app (name it "Learning Hours")
+- Copy the access token
+- Add as `MIRO_ACCESS_TOKEN` in your config
 
-## Publishing to npm
+### Enable Repository Analysis
+*Find real code examples from your team's actual codebase*
 
-For maintainers who want to publish updates:
+Create a [GitHub Personal Access Token](https://github.com/settings/tokens/new):
+- Name: "Learning Hour MCP"
+- Expiration: 90 days (recommended)
+- Permissions: `repo` (read access)
+- Add as `GITHUB_TOKEN` in your config
 
-1. Update version in package.json
-2. Build and test:
-   ```bash
-   npm run build
-   npm test
-   ```
-3. Publish to npm:
-   ```bash
-   npm publish
-   ```
+## Learn More
 
-The `prepublishOnly` script will automatically build the project before publishing.
+- [Diamante Technical Coaching](https://diamantetechcoaching.com/)
+- [SammanCoaching.org](https://sammancoaching.org/) - Technical coaching resources and Learning Hour guides
+- [Learning Hours](https://sammancoaching.org/learning_hours/index.html) - Catalog of Learning Hour topics
+- [4C Learning Model](https://sammancoaching.org/society/index.html) - Connect, Concept, Concrete, Conclusion
+- [Technical Coaching](https://www.sammancoaching.org/society/technical_coach.html) - Role and practices
+
+## Troubleshooting
+
+**"Tool not found" error**: Make sure you restarted Claude Desktop after adding the configuration.
+
+**"Invalid API key"**: Check that you copied the entire key including any prefixes (sk-ant-...).
+
+**Miro board not creating**: Check that your MIRO_ACCESS_TOKEN is valid and has board creation permissions.
+
+## Contributing
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for development setup and guidelines.
+
+## License
+
+MIT
