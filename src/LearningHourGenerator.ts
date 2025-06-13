@@ -1,3 +1,4 @@
+import Anthropic from '@anthropic-ai/sdk';
 
 interface LearningActivity {
   title: string;
@@ -40,8 +41,17 @@ export interface CodeExample {
 }
 
 export class LearningHourGenerator {
-  private readonly anthropicApiUrl = 'https://api.anthropic.com/v1/messages';
+  private readonly client: Anthropic;
   private readonly model = 'claude-3-5-sonnet-20241022';
+
+  constructor() {
+    if (!process.env.ANTHROPIC_API_KEY) {
+      throw new Error('ANTHROPIC_API_KEY environment variable is required');
+    }
+    this.client = new Anthropic({
+      apiKey: process.env.ANTHROPIC_API_KEY
+    });
+  }
 
   buildSessionPrompt(topic: string, style: string = 'slide'): string {
     return this.loadSessionPrompt(topic, style);
@@ -177,36 +187,23 @@ Make the code examples realistic and representative of real-world scenarios wher
   }
 
   async generateSessionContent(topic: string, style: string = 'slide'): Promise<SessionContent> {
-    if (!process.env.ANTHROPIC_API_KEY) {
-      throw new Error('ANTHROPIC_API_KEY environment variable is required');
-    }
-
     const prompt = this.buildSessionPrompt(topic, style);
 
     try {
-      const response = await fetch(this.anthropicApiUrl, {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-          'x-api-key': process.env.ANTHROPIC_API_KEY,
-          'anthropic-version': '2023-06-01'
-        },
-        body: JSON.stringify({
-          model: this.model,
-          max_tokens: 3000,
-          messages: [{
-            role: 'user',
-            content: prompt
-          }]
-        })
+      const message = await this.client.messages.create({
+        model: this.model,
+        max_tokens: 3000,
+        messages: [{
+          role: 'user',
+          content: prompt
+        }]
       });
 
-      if (!response.ok) {
-        throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+      const textContent = message.content.find(block => block.type === 'text');
+      if (!textContent || textContent.type !== 'text') {
+        throw new Error('No text content in response');
       }
-
-      const data = await response.json() as { content: Array<{ text: string }> };
-      const content = data.content[0].text;
+      const content = textContent.text;
       const sessionData = JSON.parse(content);
       this.validateSessionContent(sessionData);
 
@@ -217,36 +214,23 @@ Make the code examples realistic and representative of real-world scenarios wher
   }
 
   async generateCodeExample(topic: string, language: string = 'java'): Promise<CodeExample> {
-    if (!process.env.ANTHROPIC_API_KEY) {
-      throw new Error('ANTHROPIC_API_KEY environment variable is required');
-    }
-
     const prompt = this.buildCodeExamplePrompt(topic, language);
 
     try {
-      const response = await fetch(this.anthropicApiUrl, {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-          'x-api-key': process.env.ANTHROPIC_API_KEY,
-          'anthropic-version': '2023-06-01'
-        },
-        body: JSON.stringify({
-          model: this.model,
-          max_tokens: 2000,
-          messages: [{
-            role: 'user',
-            content: prompt
-          }]
-        })
+      const message = await this.client.messages.create({
+        model: this.model,
+        max_tokens: 2000,
+        messages: [{
+          role: 'user',
+          content: prompt
+        }]
       });
 
-      if (!response.ok) {
-        throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+      const textContent = message.content.find(block => block.type === 'text');
+      if (!textContent || textContent.type !== 'text') {
+        throw new Error('No text content in response');
       }
-
-      const data = await response.json() as { content: Array<{ text: string }> };
-      const content = data.content[0].text;
+      const content = textContent.text;
       const exampleData = JSON.parse(content);
       this.validateCodeExample(exampleData);
 
@@ -259,7 +243,7 @@ Make the code examples realistic and representative of real-world scenarios wher
   async generateSessionWithCodeExamples(topic: string, style: string = 'slide', language: string = 'java'): Promise<SessionContent> {
     const sessionContent = await this.generateSessionContent(topic, style);
     const codeExample = await this.generateCodeExample(topic, language);
-    
+
     const codeSection = {
       title: 'Code Examples',
       type: 'code_examples',
@@ -267,9 +251,9 @@ Make the code examples realistic and representative of real-world scenarios wher
       beforeCode: codeExample.beforeCode,
       afterCode: codeExample.afterCode
     };
-    
+
     sessionContent.miroContent.sections.push(codeSection);
-    
+
     return sessionContent;
   }
 
