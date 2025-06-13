@@ -145,6 +145,35 @@ Create a new Miro board or add frames to an existing board (requires `MIRO_ACCES
 }
 ```
 
+### `list_miro_boards`
+List all Miro boards accessible with your token (requires `MIRO_ACCESS_TOKEN`).
+
+```json
+{
+  "limit": 50,  // Optional, max 50
+  "cursor": "optional-pagination-cursor"
+}
+```
+
+### `get_miro_board`
+Get details about a specific Miro board (requires `MIRO_ACCESS_TOKEN`).
+
+```json
+{
+  "boardId": "board-id-to-get"
+}
+```
+
+### `delete_miro_board`
+Delete a Miro board (requires `MIRO_ACCESS_TOKEN`). Use with caution!
+
+```json
+{
+  "boardId": "board-id-to-delete",
+  "confirm": true  // Required safety check
+}
+```
+
 ### `analyze_repository`
 Find real code examples in GitHub repositories (requires `GITHUB_TOKEN`).
 

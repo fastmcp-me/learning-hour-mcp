@@ -181,6 +181,55 @@ class LearningHourMCP {
             required: ["repositoryUrl"],
           },
         },
+        {
+          name: "list_miro_boards",
+          description: "List all Miro boards accessible with the current token",
+          inputSchema: {
+            type: "object",
+            properties: {
+              limit: {
+                type: "number",
+                description: "Maximum number of boards to return (default: 50, max: 50)",
+              },
+              cursor: {
+                type: "string",
+                description: "Cursor for pagination",
+              },
+            },
+          },
+        },
+        {
+          name: "get_miro_board",
+          description: "Get details about a specific Miro board",
+          inputSchema: {
+            type: "object",
+            properties: {
+              boardId: {
+                type: "string",
+                description: "ID of the Miro board to get details for",
+              },
+            },
+            required: ["boardId"],
+          },
+        },
+        {
+          name: "delete_miro_board",
+          description: "Delete a Miro board (use with caution!)",
+          inputSchema: {
+            type: "object",
+            properties: {
+              boardId: {
+                type: "string",
+                description: "ID of the Miro board to delete",
+              },
+              confirm: {
+                type: "boolean",
+                description: "Must be true to confirm deletion",
+              },
+            },
+            required: ["boardId", "confirm"],
+          },
+        },
       ],
     }));
 
@@ -197,6 +246,12 @@ class LearningHourMCP {
             return await this.analyzeRepository(request.params.arguments);
           case "analyze_tech_stack":
             return await this.analyzeTechStack(request.params.arguments);
+          case "list_miro_boards":
+            return await this.listMiroBoards(request.params.arguments);
+          case "get_miro_board":
+            return await this.getMiroBoard(request.params.arguments);
+          case "delete_miro_board":
+            return await this.deleteMiroBoard(request.params.arguments);
           default:
             throw new McpError(
               ErrorCode.MethodNotFound,
@@ -269,10 +324,18 @@ class LearningHourMCP {
       let layout;
       if (input.existingBoardId) {
         // Add frames to existing board
-        layout = await this.miroIntegration.addFramesToExistingBoard(input.existingBoardId, input.sessionContent);
+        try {
+          layout = await this.miroIntegration.addFramesToExistingBoard(input.existingBoardId, input.sessionContent);
+        } catch (error) {
+          throw new Error(`Failed to add frames to existing board: ${error instanceof Error ? error.message : String(error)}`);
+        }
       } else {
         // Create new board
-        layout = await this.miroIntegration.createLearningHourBoard(input.sessionContent);
+        try {
+          layout = await this.miroIntegration.createLearningHourBoard(input.sessionContent);
+        } catch (error) {
+          throw new Error(`Failed to create new Miro board: ${error instanceof Error ? error.message : String(error)}`);
+        }
       }
 
       return {
@@ -431,6 +494,129 @@ class LearningHourMCP {
       }
       
       throw new Error(`Failed to analyze tech stack: ${errorMessage}`);
+    }
+  }
+
+  private async listMiroBoards(args: any) {
+    try {
+      if (!this.miroIntegration) {
+        throw new Error('Miro integration not initialized. Ensure MIRO_ACCESS_TOKEN is set in the environment.');
+      }
+
+      const limit = args.limit || 50;
+      const cursor = args.cursor;
+      
+      const result = await this.miroIntegration.listBoards(limit, cursor);
+      
+      const boards = result.data.map((board: any) => ({
+        id: board.id,
+        name: board.name,
+        description: board.description || '',
+        viewLink: board.viewLink,
+        createdAt: board.createdAt,
+        modifiedAt: board.modifiedAt
+      }));
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Found ${boards.length} Miro boards:`,
+          },
+          {
+            type: "text",
+            text: boards.map((b: any) => `- ${b.name} (ID: ${b.id})`).join('\n'),
+          },
+          ...(result.cursor ? [{
+            type: "text",
+            text: `\nMore boards available. Use cursor: ${result.cursor}`,
+          }] : []),
+        ],
+      };
+    } catch (error) {
+      throw new Error(`Failed to list Miro boards: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  private async getMiroBoard(args: any) {
+    try {
+      if (!this.miroIntegration) {
+        throw new Error('Miro integration not initialized. Ensure MIRO_ACCESS_TOKEN is set in the environment.');
+      }
+
+      const boardId = args.boardId;
+      if (!boardId) {
+        throw new Error('Board ID is required');
+      }
+      
+      const board = await this.miroIntegration.getBoardInfo(boardId);
+      
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Board Details:`,
+          },
+          {
+            type: "text",
+            text: `Name: ${board.name}`,
+          },
+          {
+            type: "text",
+            text: `ID: ${board.id}`,
+          },
+          {
+            type: "text",
+            text: `Description: ${board.description || 'No description'}`,
+          },
+          {
+            type: "text",
+            text: `View Link: ${board.viewLink}`,
+          },
+          {
+            type: "text",
+            text: `Created: ${board.createdAt}`,
+          },
+          {
+            type: "text",
+            text: `Modified: ${board.modifiedAt}`,
+          },
+        ],
+      };
+    } catch (error) {
+      throw new Error(`Failed to get Miro board: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  private async deleteMiroBoard(args: any) {
+    try {
+      if (!this.miroIntegration) {
+        throw new Error('Miro integration not initialized. Ensure MIRO_ACCESS_TOKEN is set in the environment.');
+      }
+
+      const boardId = args.boardId;
+      const confirm = args.confirm;
+      
+      if (!boardId) {
+        throw new Error('Board ID is required');
+      }
+      
+      if (confirm !== true) {
+        throw new Error('Deletion not confirmed. Set confirm: true to delete the board.');
+      }
+      
+      await this.miroIntegration.deleteBoard(boardId);
+      
+      return {
+        content: [
+          {
+            type: "text",
+            text: `✅ Board ${boardId} deleted successfully`,
+          },
+        ],
+      };
+    } catch (error) {
+      throw new Error(`Failed to delete Miro board: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 

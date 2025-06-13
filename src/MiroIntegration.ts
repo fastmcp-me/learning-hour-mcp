@@ -3,6 +3,7 @@ import axios from 'axios';
 interface MiroBoard {
   id: string;
   name: string;
+  description?: string;
   createdAt: string;
   modifiedAt: string;
   viewLink: string;
@@ -83,6 +84,42 @@ export class MiroIntegration {
   constructor(accessToken: string) {
     this.accessToken = accessToken;
   }
+
+  async listBoards(limit: number = 50, cursor?: string): Promise<{ data: MiroBoard[], cursor?: string }> {
+    try {
+      const params: any = { limit };
+      if (cursor) {
+        params.cursor = cursor;
+      }
+      
+      const response = await axios.get(`${this.miroApiUrl}/boards`, {
+        headers: {
+          'authorization': `Bearer ${this.accessToken}`,
+        },
+        params
+      });
+
+      return {
+        data: response.data.data || [],
+        cursor: response.data.cursor
+      };
+    } catch (error: any) {
+      throw new Error(`Failed to list boards: ${error.response?.data?.message || error.message}`);
+    }
+  }
+
+  async deleteBoard(boardId: string): Promise<void> {
+    try {
+      await axios.delete(`${this.miroApiUrl}/boards/${boardId}`, {
+        headers: {
+          'authorization': `Bearer ${this.accessToken}`,
+        }
+      });
+    } catch (error: any) {
+      throw new Error(`Failed to delete board: ${error.response?.data?.message || error.message}`);
+    }
+  }
+
   async getBoardInfo(boardId: string): Promise<MiroBoard> {
     try {
       const response = await axios.get(`${this.miroApiUrl}/boards/${boardId}`, {
@@ -90,7 +127,7 @@ export class MiroIntegration {
           'authorization': `Bearer ${this.accessToken}`,
         }
       });
-      
+
       return response.data;
     } catch (error) {
       throw new Error(`Failed to get board info: ${error instanceof Error ? error.message : String(error)}`);
@@ -99,17 +136,12 @@ export class MiroIntegration {
 
   async createBoard(name: string, description?: string): Promise<MiroBoard> {
     try {
-      const response = await axios.post(`${this.miroApiUrl}/boards`, {
-        name,
-        description,
-        policy: {
-          permissionsPolicy: {
-            collaborationToolsStartAccess: 'all_editors',
-            copyAccess: 'anyone',
-            sharingAccess: 'team_members_with_editing_rights'
-          }
-        }
-      }, {
+      const requestBody: any = { name };
+      if (description) {
+        requestBody.description = description;
+      }
+      
+      const response = await axios.post(`${this.miroApiUrl}/boards`, requestBody, {
         headers: {
           'authorization': `Bearer ${this.accessToken}`,
           'content-type': 'application/json'
@@ -129,19 +161,9 @@ export class MiroIntegration {
 
   async createStickyNote(boardId: string, content: string, x: number, y: number, color: string = 'light_yellow'): Promise<MiroStickyNote> {
     try {
-      const response = await axios.post(`${this.miroApiUrl}/boards/${boardId}/items`, {
-        type: 'sticky_note',
-        data: {
-          content: content,
-          shape: 'square'
-        },
-        style: {
-          fillColor: color
-        },
-        position: {
-          x: x,
-          y: y
-        }
+      const response = await axios.post(`${this.miroApiUrl}/boards/${boardId}/sticky_notes`, {
+        content: content,
+        shape: 'square'
       }, {
         headers: {
           'authorization': `Bearer ${this.accessToken}`,
@@ -150,31 +172,20 @@ export class MiroIntegration {
       });
 
       return response.data;
-    } catch (error) {
-      throw new Error(`Failed to create sticky note: ${error instanceof Error ? error.message : String(error)}`);
+    } catch (error: any) {
+      console.error('Sticky note creation error:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message
+      });
+      throw new Error(`Failed to create sticky note: ${error.response?.data?.message || error.message}`);
     }
   }
 
   async createTextFrame(boardId: string, content: string, x: number, y: number, width: number = 400, height: number = 200): Promise<MiroTextFrame> {
     try {
-      const response = await axios.post(`${this.miroApiUrl}/boards/${boardId}/items`, {
-        type: 'text',
-        data: {
-          content: content
-        },
-        style: {
-          fillColor: 'transparent',
-          fontSize: '14',
-          textAlign: 'left'
-        },
-        position: {
-          x: x,
-          y: y
-        },
-        geometry: {
-          width: width,
-          height: height
-        }
+      const response = await axios.post(`${this.miroApiUrl}/boards/${boardId}/texts`, {
+        content: content
       }, {
         headers: {
           'authorization': `Bearer ${this.accessToken}`,
@@ -183,8 +194,13 @@ export class MiroIntegration {
       });
 
       return response.data;
-    } catch (error) {
-      throw new Error(`Failed to create text frame: ${error instanceof Error ? error.message : String(error)}`);
+    } catch (error: any) {
+      console.error('Text frame creation error:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message
+      });
+      throw new Error(`Failed to create text frame: ${error.response?.data?.message || error.message}`);
     }
   }
 
@@ -192,33 +208,10 @@ export class MiroIntegration {
     try {
       const escapedCode = this.escapeHtml(code);
       const content = `<pre style="font-family: 'Courier New', Consolas, monospace; background-color: #1e1e1e; color: #d4d4d4; padding: 16px; border-radius: 8px; overflow-x: auto; margin: 0; white-space: pre-wrap; line-height: 1.4;">${escapedCode}</pre>`;
-      
-      const response = await axios.post(`${this.miroApiUrl}/boards/${boardId}/items`, {
-        type: 'shape',
-        data: {
-          content: content,
-          shape: 'rectangle'
-        },
-        style: {
-          fillColor: '#1e1e1e',
-          fillOpacity: 1.0,
-          borderColor: '#3c3c3c',
-          borderWidth: 1,
-          borderOpacity: 1.0,
-          color: '#d4d4d4',
-          fontFamily: 'monospace',
-          fontSize: 12,
-          textAlign: 'left',
-          textAlignVertical: 'top'
-        },
-        position: {
-          x: x,
-          y: y
-        },
-        geometry: {
-          width: width,
-          height: height
-        }
+
+      const response = await axios.post(`${this.miroApiUrl}/boards/${boardId}/shapes`, {
+        content: content,
+        shape: 'rectangle'
       }, {
         headers: {
           'authorization': `Bearer ${this.accessToken}`,
@@ -227,8 +220,13 @@ export class MiroIntegration {
       });
 
       return response.data;
-    } catch (error) {
-      throw new Error(`Failed to create code block: ${error instanceof Error ? error.message : String(error)}`);
+    } catch (error: any) {
+      console.error('Code block creation error:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message
+      });
+      throw new Error(`Failed to create code block: ${error.response?.data?.message || error.message}`);
     }
   }
 
@@ -243,24 +241,13 @@ export class MiroIntegration {
 
   async createFrame(boardId: string, x: number, y: number, width: number, height: number, title: string = '', fillColor: string = '#F7F7F7'): Promise<any> {
     try {
-      // Frames in Miro API v2 use a different endpoint
-      const response = await axios.post(`${this.miroApiUrl}/boards/${boardId}/frames`, {
-        data: {
-          title: title,
-          type: 'freeform', // frames can be 'freeform' or 'kanban'
-          format: {
-            width: width,
-            height: height
-          }
-        },
-        position: {
-          x: x,
-          y: y
-        },
-        style: {
-          fillColor: fillColor
-        }
-      }, {
+      // Frames in Miro API v2 use a specific endpoint
+      const requestBody: any = {};
+      if (title) {
+        requestBody.title = title;
+      }
+      
+      const response = await axios.post(`${this.miroApiUrl}/boards/${boardId}/frames`, requestBody, {
         headers: {
           'authorization': `Bearer ${this.accessToken}`,
           'content-type': 'application/json'
@@ -275,13 +262,13 @@ export class MiroIntegration {
         data: error.response?.data,
         message: error.message
       });
-      
+
       // If frames aren't supported or we get a 405, skip frame creation
       if (error.response?.status === 405 || error.response?.status === 403) {
         console.warn('Frame creation not supported, continuing without frames');
         return null;
       }
-      
+
       throw new Error(`Failed to create frame: ${error.response?.data?.message || error.message}`);
     }
   }
@@ -312,10 +299,10 @@ export class MiroIntegration {
 
   async addFramesToExistingBoard(boardId: string, sessionContent: any): Promise<LearningHourMiroLayout> {
     const style = sessionContent.miroContent.style ?? 'slide';
-    
+
     // Get board info to find a good position for new content
     const boardInfo = await this.getBoardInfo(boardId);
-    
+
     const layout: LearningHourMiroLayout = {
       boardId: boardId,
       viewLink: boardInfo.viewLink,
@@ -368,7 +355,7 @@ export class MiroIntegration {
           700,
           300
         );
-        
+
         if (section.title === 'Session Overview') {
           layout.sections.overview = contentFrame;
         }
@@ -391,7 +378,7 @@ export class MiroIntegration {
           300,
           30
         );
-        
+
         const afterTitle = await this.createTextFrame(
           boardId,
           `<h4 style="font-size: 16px; font-weight: bold; margin: 0;">After (${section.language || 'javascript'})</h4>`,
@@ -400,7 +387,7 @@ export class MiroIntegration {
           300,
           30
         );
-        
+
         await this.createCodeBlock(
           boardId,
           section.beforeCode,
@@ -410,7 +397,7 @@ export class MiroIntegration {
           350,
           300
         );
-        
+
         await this.createCodeBlock(
           boardId,
           section.afterCode,
@@ -459,7 +446,7 @@ export class MiroIntegration {
           600,
           150
         );
-        
+
         if (section.title === 'Session Overview') {
           layout.sections.overview = textFrame;
         }
@@ -484,7 +471,7 @@ export class MiroIntegration {
           300,
           30
         );
-        
+
         const afterTitle = await this.createTextFrame(
           boardId,
           `<h4 style="font-size: 16px; font-weight: bold;">After (${section.language || 'javascript'})</h4>`,
@@ -493,7 +480,7 @@ export class MiroIntegration {
           300,
           30
         );
-        
+
         await this.createCodeBlock(
           boardId,
           section.beforeCode,
@@ -503,7 +490,7 @@ export class MiroIntegration {
           350,
           300
         );
-        
+
         await this.createCodeBlock(
           boardId,
           section.afterCode,
@@ -543,7 +530,7 @@ export class MiroIntegration {
     const rows = Math.ceil(items.length / itemsPerRow);
     const itemSpacingX = 200;
     const itemSpacingY = 140;
-    
+
     const startX = centerX - ((itemsPerRow - 1) * itemSpacingX) / 2;
     const startY = centerY - ((rows - 1) * itemSpacingY) / 2;
 
