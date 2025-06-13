@@ -129,50 +129,26 @@ export class EnhancedMiroBuilder {
   }
 
   private async createHeaderFrame(boardId: string, sessionContent: SessionContent, position: MiroPosition) {
-    // Create main title
-    await this.miroClient.callTool({
-      name: "create-text-item",
+    // Create a frame for the header section
+    const frameResult = await this.miroClient.callTool({
+      name: "create-frame",
       arguments: {
         boardId,
-        text: `🎯 Learning Hour: ${sessionContent.topic}`,
-        xPosition: position.x + 1200,
-        yPosition: position.y,
-        fontSize: 72,
-        fontFamily: "Arial",
-        textAlign: "center"
+        title: "Learning Hour Overview",
+        x: position.x,
+        y: position.y,
+        width: 2400,
+        height: 500,
+        style: {
+          fillColor: this.colors.header.background
+        }
       }
     });
-
-    // Create subtitle
-    await this.miroClient.callTool({
-      name: "create-text-item",
-      arguments: {
-        boardId,
-        text: "Technical Excellence Through Deliberate Practice",
-        xPosition: position.x + 1200,
-        yPosition: position.y + 100,
-        fontSize: 36,
-        fontFamily: "Arial",
-        textAlign: "center"
-      }
-    });
-
-    // Create session overview
-    await this.miroClient.callTool({
-      name: "create-shape-item",
-      arguments: {
-        boardId,
-        shapeType: "rectangle",
-        xPosition: position.x + 1200,
-        yPosition: position.y + 250,
-        width: 2000,
-        height: 150,
-        fillColor: this.colors.header.background,
-        text: sessionContent.sessionOverview,
-        fontSize: 24,
-        fontColor: this.colors.header.text
-      }
-    });
+    
+    console.error('Header frame created:', frameResult);
+    
+    // For now, we'll add content as text within the frame title/description
+    // The Miro MCP might have limitations on adding items within frames
   }
 
   private async createNavigationSidebar(boardId: string, position: MiroPosition) {

@@ -16,6 +16,7 @@ import { LearningHourGenerator } from "./LearningHourGenerator.js";
 import { RepositoryAnalyzer } from "./RepositoryAnalyzer.js";
 import { TechStackAnalyzer } from "./TechStackAnalyzer.js";
 import { EnhancedMiroBuilder } from "./EnhancedMiroBuilder.js";
+import { SimpleMiroBuilder } from "./SimpleMiroBuilder.js";
 import { GitHubMCPClient } from "./GitHubMCPClient.js";
 
 const GenerateSessionInputSchema = z.object({
@@ -48,6 +49,7 @@ class LearningHourMCP {
   private techStackAnalyzer: TechStackAnalyzer;
   private miroClient?: Client;
   private enhancedMiroBuilder?: EnhancedMiroBuilder;
+  private simpleMiroBuilder?: SimpleMiroBuilder;
   private githubClient: GitHubMCPClient;
 
   constructor() {
@@ -103,6 +105,7 @@ class LearningHourMCP {
       
       // Initialize the enhanced Miro builder
       this.enhancedMiroBuilder = new EnhancedMiroBuilder(this.miroClient);
+      this.simpleMiroBuilder = new SimpleMiroBuilder(this.miroClient);
     } catch (error) {
       console.error("Failed to connect to Miro MCP:", error);
       console.error("Error details:", error instanceof Error ? error.stack : error);
@@ -290,17 +293,17 @@ class LearningHourMCP {
     console.error('Parsed input:', JSON.stringify(input, null, 2));
     
     try {
-      if (!this.miroClient || !this.enhancedMiroBuilder) {
+      if (!this.miroClient || !this.simpleMiroBuilder) {
         console.error('Miro client status:', { 
           miroClient: !!this.miroClient, 
-          enhancedMiroBuilder: !!this.enhancedMiroBuilder 
+          simpleMiroBuilder: !!this.simpleMiroBuilder 
         });
         throw new Error('Miro MCP client not initialized. Ensure MIRO_ACCESS_TOKEN is set in the environment.');
       }
 
-      console.error('Creating enhanced board with session content...');
-      // Use the enhanced Miro builder for sophisticated board layouts
-      const boardId = await this.enhancedMiroBuilder.createEnhancedBoard(input.sessionContent);
+      console.error('Creating board with simple Miro builder...');
+      // Use the simple Miro builder that just creates frames
+      const boardId = await this.simpleMiroBuilder.createSimpleBoard(input.sessionContent);
       console.error('Board created with ID:', boardId);
 
       // Get the board view link
