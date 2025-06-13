@@ -290,7 +290,7 @@ Style-specific adaptations:
 - workshop: Include additional breakout activities and extended practice time`;
   }
 
-  buildCodeExamplePrompt(topic: string, language: string): string {
+  private buildCodeExamplePrompt(topic: string, language: string): string {
     return `Create a comprehensive, production-like code example for a Learning Hour on "${topic}" in ${language}.
 
 CONTEXT: This example will be used in the Concrete phase of a Learning Hour where participants practice refactoring through hands-on coding. The example must feel realistic and connect to actual problems developers face.
@@ -425,13 +425,13 @@ CRITICAL DETAILS:
       }
       const content = textContent.text;
       console.error('Raw response:', content.substring(0, 200) + '...');
-      
+
       // Try to extract JSON from the response
       const jsonMatch = content.match(/\{[\s\S]*\}$/);
       if (!jsonMatch) {
         throw new Error('No valid JSON found in response');
       }
-      
+
       const exampleData = JSON.parse(jsonMatch[0]);
       this.validateCodeExample(exampleData);
 
@@ -440,7 +440,6 @@ CRITICAL DETAILS:
       throw new Error(`Failed to generate code example: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
-
 
   private validateSessionContent(data: any): void {
     const required = ['topic', 'sessionOverview', 'learningObjectives', 'activities', 'discussionPrompts', 'keyTakeaways', 'miroContent'];

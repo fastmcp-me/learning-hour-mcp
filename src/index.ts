@@ -40,7 +40,7 @@ const CreateMiroBoardInputSchema = z.object({
   existingBoardId: z.string().optional(),
 });
 
-class LearningHourMCP {
+export class LearningHourMCP {
   private server: Server;
   private generator: LearningHourGenerator;
   private repositoryAnalyzer: RepositoryAnalyzer;
@@ -250,8 +250,6 @@ class LearningHourMCP {
             return await this.listMiroBoards(request.params.arguments);
           case "get_miro_board":
             return await this.getMiroBoard(request.params.arguments);
-          case "delete_miro_board":
-            return await this.deleteMiroBoard(request.params.arguments);
           default:
             throw new McpError(
               ErrorCode.MethodNotFound,
@@ -267,9 +265,9 @@ class LearningHourMCP {
     });
   }
 
-  private async generateSession(args: any) {
+  public async generateSession(args: any) {
     const input = GenerateSessionInputSchema.parse(args);
-    
+
     try {
       const sessionData = await this.generator.generateSessionContent(input.topic, input.style);
 
@@ -280,7 +278,7 @@ class LearningHourMCP {
             text: `✅ Learning Hour session generated for: ${input.topic}`,
           },
           {
-            type: "text", 
+            type: "text",
             text: JSON.stringify(sessionData, null, 2),
           },
         ],
@@ -292,7 +290,7 @@ class LearningHourMCP {
 
   private async generateCodeExample(args: any) {
     const input = GenerateCodeExampleInputSchema.parse(args);
-    
+
     try {
       const exampleData = await this.generator.generateCodeExample(input.topic, input.language);
 
@@ -315,7 +313,7 @@ class LearningHourMCP {
 
   private async createMiroBoard(args: any) {
     const input = CreateMiroBoardInputSchema.parse(args);
-    
+
     try {
       if (!this.miroIntegration) {
         throw new Error('Miro integration not initialized. Ensure MIRO_ACCESS_TOKEN is set in the environment.');
@@ -369,7 +367,7 @@ class LearningHourMCP {
 
   private async analyzeRepository(args: any) {
     const input = AnalyzeRepositoryInputSchema.parse(args);
-    
+
     try {
       const analysisResult = await this.repositoryAnalyzer.analyzeRepository(input.repositoryUrl, input.codeSmell);
 
@@ -391,7 +389,7 @@ class LearningHourMCP {
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      
+
       if (errorMessage.includes('GitHub integration not configured')) {
         return {
           content: [
@@ -410,7 +408,7 @@ class LearningHourMCP {
           ],
         };
       }
-      
+
       if (errorMessage.includes('No examples')) {
         return {
           content: [
@@ -425,14 +423,14 @@ class LearningHourMCP {
           ],
         };
       }
-      
+
       throw new Error(`Failed to analyze repository: ${errorMessage}`);
     }
   }
 
   private async analyzeTechStack(args: any) {
     const input = AnalyzeTechStackInputSchema.parse(args);
-    
+
     try {
       const techProfile = await this.techStackAnalyzer.analyzeTechStack(input.repositoryUrl);
 
@@ -458,7 +456,7 @@ class LearningHourMCP {
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      
+
       if (errorMessage.includes('GitHub integration not configured')) {
         return {
           content: [
@@ -477,7 +475,7 @@ class LearningHourMCP {
           ],
         };
       }
-      
+
       if (errorMessage.includes('Unable to analyze tech stack')) {
         return {
           content: [
@@ -492,7 +490,7 @@ class LearningHourMCP {
           ],
         };
       }
-      
+
       throw new Error(`Failed to analyze tech stack: ${errorMessage}`);
     }
   }
@@ -505,9 +503,9 @@ class LearningHourMCP {
 
       const limit = args.limit || 50;
       const cursor = args.cursor;
-      
+
       const result = await this.miroIntegration.listBoards(limit, cursor);
-      
+
       const boards = result.data.map((board: any) => ({
         id: board.id,
         name: board.name,
@@ -548,9 +546,9 @@ class LearningHourMCP {
       if (!boardId) {
         throw new Error('Board ID is required');
       }
-      
+
       const board = await this.miroIntegration.getBoardInfo(boardId);
-      
+
       return {
         content: [
           {
@@ -587,39 +585,6 @@ class LearningHourMCP {
       throw new Error(`Failed to get Miro board: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
-
-  private async deleteMiroBoard(args: any) {
-    try {
-      if (!this.miroIntegration) {
-        throw new Error('Miro integration not initialized. Ensure MIRO_ACCESS_TOKEN is set in the environment.');
-      }
-
-      const boardId = args.boardId;
-      const confirm = args.confirm;
-      
-      if (!boardId) {
-        throw new Error('Board ID is required');
-      }
-      
-      if (confirm !== true) {
-        throw new Error('Deletion not confirmed. Set confirm: true to delete the board.');
-      }
-      
-      await this.miroIntegration.deleteBoard(boardId);
-      
-      return {
-        content: [
-          {
-            type: "text",
-            text: `✅ Board ${boardId} deleted successfully`,
-          },
-        ],
-      };
-    } catch (error) {
-      throw new Error(`Failed to delete Miro board: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
-
   async run() {
     const transport = new StdioServerTransport();
     await this.server.connect(transport);

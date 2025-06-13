@@ -1,4 +1,6 @@
 import axios from 'axios';
+import FormData from 'form-data';
+import { CodeImageGenerator } from './CodeImageGenerator';
 
 interface MiroBoard {
   id: string;
@@ -25,31 +27,7 @@ interface MiroStickyNote {
   };
 }
 
-interface MiroCodeBlock {
-  id: string;
-  type: 'shape';
-  data: {
-    content: string;
-    shape: 'rectangle';
-  };
-  style: {
-    fillColor: string;
-    borderColor: string;
-    color: string;
-    fontFamily: string;
-    fontSize: number;
-  };
-  position: {
-    x: number;
-    y: number;
-  };
-  geometry: {
-    width: number;
-    height: number;
-  };
-}
-
-interface MiroTextFrame {
+interface MiroFrame {
   id: string;
   type: 'text';
   data: {
@@ -65,11 +43,32 @@ interface MiroTextFrame {
   };
 }
 
+interface MiroSection {
+  type: 'text_frame' | 'code_block' | 'code_examples' | 'sticky_notes';
+  title: string;
+  content?: string;
+  code?: string;
+  beforeCode?: string;
+  afterCode?: string;
+  language?: string;
+  items?: string[];
+  color?: string;
+}
+
+interface SessionContent {
+  sessionOverview: string;
+  miroContent: {
+    boardTitle: string;
+    style?: 'slide' | 'vertical';
+    sections: MiroSection[];
+  };
+}
+
 interface LearningHourMiroLayout {
   boardId: string;
   viewLink?: string;
   sections: {
-    overview: MiroTextFrame;
+    overview: MiroFrame;
     objectives: MiroStickyNote[];
     activities: MiroStickyNote[];
     discussions: MiroStickyNote[];
@@ -77,12 +76,16 @@ interface LearningHourMiroLayout {
   };
 }
 
+type Theme = "breeze" | "candy" | "crimson" | "falcon" | "meadow" | "midnight" | "raindrop" | "sunset";
+
 export class MiroIntegration {
   private readonly miroApiUrl = 'https://api.miro.com/v2';
   private readonly accessToken: string;
+  private codeImageGenerator: CodeImageGenerator;
 
   constructor(accessToken: string) {
     this.accessToken = accessToken;
+    this.codeImageGenerator = new CodeImageGenerator();
   }
 
   async listBoards(limit: number = 50, cursor?: string): Promise<{ data: MiroBoard[], cursor?: string }> {
@@ -91,7 +94,7 @@ export class MiroIntegration {
       if (cursor) {
         params.cursor = cursor;
       }
-      
+
       const response = await axios.get(`${this.miroApiUrl}/boards`, {
         headers: {
           'authorization': `Bearer ${this.accessToken}`,
@@ -105,18 +108,6 @@ export class MiroIntegration {
       };
     } catch (error: any) {
       throw new Error(`Failed to list boards: ${error.response?.data?.message || error.message}`);
-    }
-  }
-
-  async deleteBoard(boardId: string): Promise<void> {
-    try {
-      await axios.delete(`${this.miroApiUrl}/boards/${boardId}`, {
-        headers: {
-          'authorization': `Bearer ${this.accessToken}`,
-        }
-      });
-    } catch (error: any) {
-      throw new Error(`Failed to delete board: ${error.response?.data?.message || error.message}`);
     }
   }
 
@@ -134,13 +125,266 @@ export class MiroIntegration {
     }
   }
 
-  async createBoard(name: string, description?: string): Promise<MiroBoard> {
+  async createFrame(boardId: string, x: number, y: number, width: number = 400, height: number = 200): Promise<MiroFrame> {
+    try {
+      const response = await axios.post(`${this.miroApiUrl}/boards/${boardId}/frames`, {
+        data: {},
+        style: {
+          fillColor: '#ffffff'
+        },
+        position: {
+          x: x,
+          y: y
+        },
+        geometry: {
+          width: width,
+          height: height
+        }
+      }, {
+        headers: {
+          'authorization': `Bearer ${this.accessToken}`,
+          'content-type': 'application/json'
+        }
+      });
+
+      return response.data;
+    } catch (error: any) {
+      console.error('Text frame creation error:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        fields: error.response?.data?.context?.fields,
+        validations: error.response?.data?.context.validationErrors,
+        message: error.message
+      });
+      throw new Error(`Failed to create text frame: ${error.response?.data?.message || error.message}`);
+    }
+  }
+
+  async createTextBox(boardId: string, content: string, x: number, y: number, width: number, fillColor: string = '#F7F7F7'): Promise<any> {
+    try {
+      const requestBody: any = {
+        data: {
+          content: content
+        },
+        style: {
+          color: "#1a1a1a",
+          fillColor: fillColor,
+          fontFamily: "arial",
+          textAlign: "left"
+        },
+        position: {
+          x: x,
+          y: y
+        },
+        geometry: {
+          rotation: 0,
+          width: width
+        },
+        parent: {
+          id: parseInt(boardId)
+        }
+      };
+
+      const response = await axios.post(`${this.miroApiUrl}/boards/${boardId}/texts`, requestBody, {
+        headers: {
+          'authorization': `Bearer ${this.accessToken}`,
+          'content-type': 'application/json',
+          'accept': 'application/json'
+        }
+      });
+
+      return response.data;
+    } catch (error: any) {
+      console.error('Textbox creation error:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        fields: error.response?.data?.context?.fields,
+        message: error.message
+      });
+
+      throw new Error(`Failed to create textbox: ${error.response?.data?.message || error.message}`);
+    }
+  }
+
+  async createStickyNote(boardId: string, content: string, x: number, y: number, color: string = 'light_yellow'): Promise<MiroStickyNote> {
+    try {
+      const response = await axios.post(`${this.miroApiUrl}/boards/${boardId}/sticky_notes`, {
+        data: {
+          content: content
+        },
+        style: {
+          fillColor: color
+        },
+        position: {
+          x: x,
+          y: y
+        }
+      }, {
+        headers: {
+          'authorization': `Bearer ${this.accessToken}`,
+          'content-type': 'application/json'
+        }
+      });
+
+      return response.data;
+    } catch (error: any) {
+      console.error('Sticky note creation error:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        fields: error.response?.data?.context?.fields,
+        message: error.message
+      });
+      throw new Error(`Failed to create sticky note: ${error.response?.data?.message || error.message}`);
+    }
+  }
+
+  async createCodeBlock(boardId: string, code: string, x: number, y: number, language: string = 'javascript', width: number = 800, height: number = 400, title?: string, theme: Theme = 'sunset'): Promise<any> {
+    try {
+      const cleanCode = this.codeImageGenerator.cleanCodeSnippet(code);
+
+      const codeImage = await this.codeImageGenerator.generateCodeImage({
+        code: cleanCode,
+        language: language,
+        theme: theme,
+        darkMode: true,
+        padding: 32,
+        title: title
+      });
+
+      if (codeImage && codeImage.buffer) {
+        // Upload image using multipart form data
+        const formData = new FormData();
+        formData.append('resource', codeImage.buffer, {
+          filename: `code-${Date.now()}.png`,
+          contentType: 'image/png'
+        });
+
+        // Add position and geometry as form fields
+        formData.append('data', JSON.stringify({
+          position: {
+            x: x,
+            y: y
+          },
+          geometry: {
+            width: width,
+            height: height
+          }
+        }));
+
+        const response = await axios.post(`${this.miroApiUrl}/boards/${boardId}/images`, formData, {
+          headers: {
+            'authorization': `Bearer ${this.accessToken}`,
+            ...formData.getHeaders()
+          },
+          maxContentLength: Infinity,
+          maxBodyLength: Infinity
+        });
+
+        return response.data;
+      } else {
+        // Fallback to text-based approach
+        console.log('Using text-based code block (no image buffer available)');
+        return this.createTextBasedCodeBlock(boardId, cleanCode, x, y, width, height);
+      }
+    } catch (error: any) {
+      console.error('Code block creation error:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        fields: error.response?.data?.context?.fields,
+        message: error.message
+      });
+      throw new Error(`Failed to create code block: ${error.response?.data?.message || error.message}`);
+    }
+  }
+
+  private async createTextBasedCodeBlock(boardId: string, code: string, x: number, y: number, width: number, height: number): Promise<any> {
+    await axios.post(`${this.miroApiUrl}/boards/${boardId}/shapes`, {
+      data: {
+        content: code,
+        shape: 'rectangle'
+      },
+      style: {
+        fillColor: "#1e1e1e",
+        borderWidth: 2
+      },
+      position: {
+        x: x,
+        y: y
+      },
+      geometry: {
+        width: width,
+        height: height
+      }
+    }, {
+      headers: {
+        'authorization': `Bearer ${this.accessToken}`,
+        'content-type': 'application/json'
+      }
+    });
+
+    const response = await axios.post(`${this.miroApiUrl}/boards/${boardId}/texts`, {
+      data: {
+        content: code
+      },
+      style: {
+        color: "#d4d4d4",
+        fillColor: "#ffffff",
+        fontFamily: "arial",
+        fontSize: 12,
+        textAlign: "left"
+      },
+      position: {
+        x: x + 20,
+        y: y + 20
+      },
+      geometry: {
+        width: width - 40
+      }
+    }, {
+      headers: {
+        'authorization': `Bearer ${this.accessToken}`,
+        'content-type': 'application/json'
+      }
+    });
+
+    return response.data;
+  }
+
+  async createLearningHourBoard(sessionContent: SessionContent): Promise<LearningHourMiroLayout> {
+    const boardName = sessionContent.miroContent.boardTitle;
+    const board = await this.createBoard(boardName, sessionContent.sessionOverview);
+    const style = sessionContent.miroContent.style ?? 'slide';
+
+    const layout: LearningHourMiroLayout = {
+      boardId: board.id,
+      viewLink: board.viewLink,
+      sections: {
+        overview: {} as MiroFrame,
+        objectives: [],
+        activities: [],
+        discussions: [],
+        takeaways: []
+      }
+    };
+
+    if (style === 'slide') {
+      return await this.createSlideLayout(board.id, sessionContent, layout);
+    } else {
+      return await this.createVerticalLayout(board.id, sessionContent, layout);
+    }
+  }
+
+  private async createBoard(name: string, description?: string): Promise<MiroBoard> {
     try {
       const requestBody: any = { name };
       if (description) {
         requestBody.description = description;
       }
-      
+
       const response = await axios.post(`${this.miroApiUrl}/boards`, requestBody, {
         headers: {
           'authorization': `Bearer ${this.accessToken}`,
@@ -159,146 +403,16 @@ export class MiroIntegration {
     }
   }
 
-  async createStickyNote(boardId: string, content: string, x: number, y: number, color: string = 'light_yellow'): Promise<MiroStickyNote> {
-    try {
-      const response = await axios.post(`${this.miroApiUrl}/boards/${boardId}/sticky_notes`, {
-        content: content,
-        shape: 'square'
-      }, {
-        headers: {
-          'authorization': `Bearer ${this.accessToken}`,
-          'content-type': 'application/json'
-        }
-      });
+  async addFramesToExistingBoard(boardId: string, sessionContent: SessionContent): Promise<LearningHourMiroLayout> {
+    console.info('Session content structure:', {
+      hasMiroContent: !!sessionContent.miroContent,
+      miroContentKeys: sessionContent.miroContent ? Object.keys(sessionContent.miroContent) : [],
+      hasSections: sessionContent.miroContent?.sections !== undefined,
+      sectionsType: Array.isArray(sessionContent.miroContent?.sections) ? 'array' : typeof sessionContent.miroContent?.sections,
+      sectionsLength: Array.isArray(sessionContent.miroContent?.sections) ? sessionContent.miroContent.sections.length : 'N/A'
+    });
 
-      return response.data;
-    } catch (error: any) {
-      console.error('Sticky note creation error:', {
-        status: error.response?.status,
-        data: error.response?.data,
-        message: error.message
-      });
-      throw new Error(`Failed to create sticky note: ${error.response?.data?.message || error.message}`);
-    }
-  }
-
-  async createTextFrame(boardId: string, content: string, x: number, y: number, width: number = 400, height: number = 200): Promise<MiroTextFrame> {
-    try {
-      const response = await axios.post(`${this.miroApiUrl}/boards/${boardId}/texts`, {
-        content: content
-      }, {
-        headers: {
-          'authorization': `Bearer ${this.accessToken}`,
-          'content-type': 'application/json'
-        }
-      });
-
-      return response.data;
-    } catch (error: any) {
-      console.error('Text frame creation error:', {
-        status: error.response?.status,
-        data: error.response?.data,
-        message: error.message
-      });
-      throw new Error(`Failed to create text frame: ${error.response?.data?.message || error.message}`);
-    }
-  }
-
-  async createCodeBlock(boardId: string, code: string, x: number, y: number, language: string = 'javascript', width: number = 500, height: number = 300): Promise<any> {
-    try {
-      const escapedCode = this.escapeHtml(code);
-      const content = `<pre style="font-family: 'Courier New', Consolas, monospace; background-color: #1e1e1e; color: #d4d4d4; padding: 16px; border-radius: 8px; overflow-x: auto; margin: 0; white-space: pre-wrap; line-height: 1.4;">${escapedCode}</pre>`;
-
-      const response = await axios.post(`${this.miroApiUrl}/boards/${boardId}/shapes`, {
-        content: content,
-        shape: 'rectangle'
-      }, {
-        headers: {
-          'authorization': `Bearer ${this.accessToken}`,
-          'content-type': 'application/json'
-        }
-      });
-
-      return response.data;
-    } catch (error: any) {
-      console.error('Code block creation error:', {
-        status: error.response?.status,
-        data: error.response?.data,
-        message: error.message
-      });
-      throw new Error(`Failed to create code block: ${error.response?.data?.message || error.message}`);
-    }
-  }
-
-  private escapeHtml(text: string): string {
-    return text
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-  }
-
-  async createFrame(boardId: string, x: number, y: number, width: number, height: number, title: string = '', fillColor: string = '#F7F7F7'): Promise<any> {
-    try {
-      // Frames in Miro API v2 use a specific endpoint
-      const requestBody: any = {};
-      if (title) {
-        requestBody.title = title;
-      }
-      
-      const response = await axios.post(`${this.miroApiUrl}/boards/${boardId}/frames`, requestBody, {
-        headers: {
-          'authorization': `Bearer ${this.accessToken}`,
-          'content-type': 'application/json'
-        }
-      });
-
-      return response.data;
-    } catch (error: any) {
-      console.error('Frame creation error:', {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        message: error.message
-      });
-
-      // If frames aren't supported or we get a 405, skip frame creation
-      if (error.response?.status === 405 || error.response?.status === 403) {
-        console.warn('Frame creation not supported, continuing without frames');
-        return null;
-      }
-
-      throw new Error(`Failed to create frame: ${error.response?.data?.message || error.message}`);
-    }
-  }
-
-  async createLearningHourBoard(sessionContent: any): Promise<LearningHourMiroLayout> {
-    const boardName = sessionContent.miroContent.boardTitle;
-    const board = await this.createBoard(boardName, sessionContent.sessionOverview);
-    const style = sessionContent.miroContent.style ?? 'slide';
-
-    const layout: LearningHourMiroLayout = {
-      boardId: board.id,
-      viewLink: board.viewLink,
-      sections: {
-        overview: {} as MiroTextFrame,
-        objectives: [],
-        activities: [],
-        discussions: [],
-        takeaways: []
-      }
-    };
-
-    if (style === 'slide') {
-      return await this.createSlideLayout(board.id, sessionContent, layout);
-    } else {
-      return await this.createVerticalLayout(board.id, sessionContent, layout);
-    }
-  }
-
-  async addFramesToExistingBoard(boardId: string, sessionContent: any): Promise<LearningHourMiroLayout> {
-    const style = sessionContent.miroContent.style ?? 'slide';
+    const style = sessionContent.miroContent?.style ?? 'slide';
 
     // Get board info to find a good position for new content
     const boardInfo = await this.getBoardInfo(boardId);
@@ -307,7 +421,7 @@ export class MiroIntegration {
       boardId: boardId,
       viewLink: boardInfo.viewLink,
       sections: {
-        overview: {} as MiroTextFrame,
+        overview: {} as MiroFrame,
         objectives: [],
         activities: [],
         discussions: [],
@@ -323,38 +437,28 @@ export class MiroIntegration {
     }
   }
 
-  private async createSlideLayout(boardId: string, content: any, layout: LearningHourMiroLayout): Promise<LearningHourMiroLayout> {
+  private async createSlideLayout(boardId: string, content: SessionContent, layout: LearningHourMiroLayout): Promise<LearningHourMiroLayout> {
     const slideSpacing = 1000;
     let currentSlideX = 0;
 
-    for (const section of content.miroContent.sections) {
+    // Ensure sections exists and is iterable
+    const sections = content.miroContent?.sections || [];
+    if (!Array.isArray(sections)) {
+      throw new Error('miroContent.sections must be an array');
+    }
+
+    for (const section of sections) {
       const slideX = currentSlideX;
       const slideY = 0;
 
-      // Try to create frame, but continue if it fails
-      try {
-        await this.createFrame(boardId, slideX - 50, slideY - 50, 900, 700, section.title || '');
-      } catch (error) {
-        console.warn('Skipping frame creation:', error instanceof Error ? error.message : String(error));
-      }
-      await this.createTextFrame(
-        boardId,
-        `<h2 style="text-align: center; font-size: 24px; font-weight: bold;">${section.title}</h2>`,
-        slideX,
-        slideY - 250,
-        800,
-        80
-      );
+      // Create title text box for this section
+      await this.createTextBox(boardId, section.title, slideX - 50, slideY - 300, 800, '#ffffff');
+
+      // Create frame for section title
+      await this.createFrame(boardId, slideX, slideY - 250, 800, 800);
 
       if (section.type === 'text_frame') {
-        const contentFrame = await this.createTextFrame(
-          boardId,
-          `<div style="font-size: 16px; line-height: 1.5;">${section.content}</div>`,
-          slideX,
-          slideY - 100,
-          700,
-          300
-        );
+        const contentFrame = await this.createFrame(boardId, slideX, slideY - 100, 800, 800);
 
         if (section.title === 'Session Overview') {
           layout.sections.overview = contentFrame;
@@ -370,43 +474,12 @@ export class MiroIntegration {
           300
         );
       } else if (section.type === 'code_examples' && section.beforeCode && section.afterCode) {
-        const beforeTitle = await this.createTextFrame(
-          boardId,
-          `<h4 style="font-size: 16px; font-weight: bold; margin: 0;">Before (${section.language || 'javascript'})</h4>`,
-          slideX - 200,
-          slideY - 250,
-          300,
-          30
-        );
+        await this.createTextBox(boardId, 'Before', slideX - 350, slideY - 300, 100, '#FFE066');
+        await this.createTextBox(boardId, 'After', slideX + 250, slideY - 300, 100, '#06D6A0');
 
-        const afterTitle = await this.createTextFrame(
-          boardId,
-          `<h4 style="font-size: 16px; font-weight: bold; margin: 0;">After (${section.language || 'javascript'})</h4>`,
-          slideX + 200,
-          slideY - 250,
-          300,
-          30
-        );
+        await this.createCodeBlock(boardId, section.beforeCode, slideX - 350, slideY - 50, section.language || 'javascript', 400, 350, 'Before', 'midnight');
 
-        await this.createCodeBlock(
-          boardId,
-          section.beforeCode,
-          slideX - 200,
-          slideY - 50,
-          section.language || 'javascript',
-          350,
-          300
-        );
-
-        await this.createCodeBlock(
-          boardId,
-          section.afterCode,
-          slideX + 200,
-          slideY - 50,
-          section.language || 'javascript',
-          350,
-          300
-        );
+        await this.createCodeBlock(boardId, section.afterCode, slideX + 250, slideY - 50, section.language || 'javascript', 400, 350, 'After', 'midnight');
       } else if (section.type === 'sticky_notes' && section.items) {
         const stickyNotes = await this.createStickyNotesGrid(
           boardId, section.items, slideX, slideY, section.color ?? 'light_yellow'
@@ -420,32 +493,26 @@ export class MiroIntegration {
     return layout;
   }
 
-  private async createVerticalLayout(boardId: string, content: any, layout: LearningHourMiroLayout): Promise<LearningHourMiroLayout> {
+  private async createVerticalLayout(boardId: string, content: SessionContent, layout: LearningHourMiroLayout): Promise<LearningHourMiroLayout> {
     let currentY = -400;
     const sectionSpacing = 300;
 
-    for (const section of content.miroContent.sections) {
+    // Ensure sections exists and is iterable
+    const sections = content.miroContent?.sections || [];
+    if (!Array.isArray(sections)) {
+      throw new Error('miroContent.sections must be an array');
+    }
+
+    for (const section of sections) {
       const sectionY = currentY;
       currentY += sectionSpacing;
 
-      await this.createTextFrame(
-        boardId,
-        `<h3>${section.title}</h3>`,
-        -500,
-        sectionY,
-        200,
-        60
-      );
+      // Create title text box for vertical layout
+      await this.createTextBox(boardId, section.title, -500, sectionY - 50, 200, '#ffffff');
+      await this.createFrame(boardId, -500, sectionY, 800, 800);
 
       if (section.type === 'text_frame') {
-        const textFrame = await this.createTextFrame(
-          boardId,
-          `<h2>${section.title}</h2><p>${section.content}</p>`,
-          -200,
-          sectionY,
-          600,
-          150
-        );
+        const textFrame = await this.createFrame(boardId, -200, sectionY, 800, 800);
 
         if (section.title === 'Session Overview') {
           layout.sections.overview = textFrame;
@@ -463,44 +530,13 @@ export class MiroIntegration {
         );
         currentY += 350;
       } else if (section.type === 'code_examples' && section.beforeCode && section.afterCode) {
-        const beforeTitle = await this.createTextFrame(
-          boardId,
-          `<h4 style="font-size: 16px; font-weight: bold;">Before (${section.language || 'javascript'})</h4>`,
-          -500,
-          sectionY,
-          300,
-          30
-        );
+        await this.createTextBox(boardId, 'Before', -600, sectionY, 100, '#FFE066');
+        await this.createTextBox(boardId, 'After', 100, sectionY, 100, '#06D6A0');
 
-        const afterTitle = await this.createTextFrame(
-          boardId,
-          `<h4 style="font-size: 16px; font-weight: bold;">After (${section.language || 'javascript'})</h4>`,
-          100,
-          sectionY,
-          300,
-          30
-        );
+        await this.createCodeBlock(boardId, section.beforeCode, -600, sectionY + 50, section.language || 'javascript', 400, 350, 'Before', 'midnight');
 
-        await this.createCodeBlock(
-          boardId,
-          section.beforeCode,
-          -500,
-          sectionY + 50,
-          section.language || 'javascript',
-          350,
-          300
-        );
-
-        await this.createCodeBlock(
-          boardId,
-          section.afterCode,
-          100,
-          sectionY + 50,
-          section.language || 'javascript',
-          350,
-          300
-        );
-        currentY += 400;
+        await this.createCodeBlock(boardId, section.afterCode, 100, sectionY + 50, section.language || 'javascript', 400, 350, 'After', 'midnight');
+        currentY += 450;
       } else if (section.type === 'sticky_notes' && section.items) {
         const stickyNotes: MiroStickyNote[] = [];
         let currentX = -400;
@@ -511,7 +547,7 @@ export class MiroIntegration {
             item,
             currentX,
             sectionY,
-            section.color ?? 'light_yellow'
+            section.color
           );
           stickyNotes.push(note);
           currentX += 120;
@@ -569,19 +605,4 @@ export class MiroIntegration {
         break;
     }
   }
-
-  async getBoardViewLink(boardId: string): Promise<string> {
-    try {
-      const response = await axios.get(`${this.miroApiUrl}/boards/${boardId}`, {
-        headers: {
-          'authorization': `Bearer ${this.accessToken}`
-        }
-      });
-
-      return response.data.viewLink;
-    } catch (error) {
-      throw new Error(`Failed to get board view link: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
-
 }
