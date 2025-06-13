@@ -241,25 +241,24 @@ export class MiroIntegration {
       .replace(/'/g, '&#39;');
   }
 
-  async createFrame(boardId: string, x: number, y: number, width: number, height: number, fillColor: string = 'transparent', borderWidth: number = 1): Promise<any> {
+  async createFrame(boardId: string, x: number, y: number, width: number, height: number, title: string = '', fillColor: string = '#F7F7F7'): Promise<any> {
     try {
-      const response = await axios.post(`${this.miroApiUrl}/boards/${boardId}/items`, {
-        type: 'frame',
+      // Frames in Miro API v2 use a different endpoint
+      const response = await axios.post(`${this.miroApiUrl}/boards/${boardId}/frames`, {
         data: {
-          title: ''
-        },
-        style: {
-          fillColor: fillColor,
-          borderColor: '#e0e0e0',
-          borderWidth: borderWidth
+          title: title,
+          type: 'freeform', // frames can be 'freeform' or 'kanban'
+          format: {
+            width: width,
+            height: height
+          }
         },
         position: {
           x: x,
           y: y
         },
-        geometry: {
-          width: width,
-          height: height
+        style: {
+          fillColor: fillColor
         }
       }, {
         headers: {
@@ -269,8 +268,21 @@ export class MiroIntegration {
       });
 
       return response.data;
-    } catch (error) {
-      throw new Error(`Failed to create frame: ${error instanceof Error ? error.message : String(error)}`);
+    } catch (error: any) {
+      console.error('Frame creation error:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message
+      });
+      
+      // If frames aren't supported or we get a 405, skip frame creation
+      if (error.response?.status === 405 || error.response?.status === 403) {
+        console.warn('Frame creation not supported, continuing without frames');
+        return null;
+      }
+      
+      throw new Error(`Failed to create frame: ${error.response?.data?.message || error.message}`);
     }
   }
 
@@ -332,7 +344,12 @@ export class MiroIntegration {
       const slideX = currentSlideX;
       const slideY = 0;
 
-      await this.createFrame(boardId, slideX - 50, slideY - 50, 900, 700, 'transparent', 2);
+      // Try to create frame, but continue if it fails
+      try {
+        await this.createFrame(boardId, slideX - 50, slideY - 50, 900, 700, section.title || '');
+      } catch (error) {
+        console.warn('Skipping frame creation:', error instanceof Error ? error.message : String(error));
+      }
       await this.createTextFrame(
         boardId,
         `<h2 style="text-align: center; font-size: 24px; font-weight: bold;">${section.title}</h2>`,
