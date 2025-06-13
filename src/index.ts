@@ -37,6 +37,7 @@ const AnalyzeTechStackInputSchema = z.object({
 
 const CreateMiroBoardInputSchema = z.object({
   sessionContent: z.any(),
+  existingBoardId: z.string().optional(),
 });
 
 class LearningHourMCP {
@@ -132,13 +133,17 @@ class LearningHourMCP {
         },
         {
           name: "create_miro_board",
-          description: "Create a Miro board from Learning Hour session content",
+          description: "Create a new Miro board OR add frames to an existing board. This tool uses the Miro REST API to create boards with frames, sticky notes, text, and code blocks. It can create standalone boards or add content to existing boards.",
           inputSchema: {
             type: "object",
             properties: {
               sessionContent: {
                 type: "object",
                 description: "Session content from generate_session output",
+              },
+              existingBoardId: {
+                type: "string",
+                description: "Optional: ID of an existing Miro board to add frames to. If not provided, creates a new board.",
               },
             },
             required: ["sessionContent"],
@@ -261,7 +266,14 @@ class LearningHourMCP {
         throw new Error('Miro integration not initialized. Ensure MIRO_ACCESS_TOKEN is set in the environment.');
       }
 
-      const layout = await this.miroIntegration.createLearningHourBoard(input.sessionContent);
+      let layout;
+      if (input.existingBoardId) {
+        // Add frames to existing board
+        layout = await this.miroIntegration.addFramesToExistingBoard(input.existingBoardId, input.sessionContent);
+      } else {
+        // Create new board
+        layout = await this.miroIntegration.createLearningHourBoard(input.sessionContent);
+      }
 
       return {
         content: [

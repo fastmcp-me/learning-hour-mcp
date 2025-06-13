@@ -136,7 +136,14 @@ Create before/after code examples for a specific topic.
 ```
 
 ### `create_miro_board`
-Transform session content into an interactive Miro board (requires `MIRO_ACCESS_TOKEN`).
+Create a new Miro board or add frames to an existing board (requires `MIRO_ACCESS_TOKEN`).
+
+```json
+{
+  "sessionContent": { /* from generate_session */ },
+  "existingBoardId": "optional-board-id"  // If provided, adds frames to existing board
+}
+```
 
 ### `analyze_repository`
 Find real code examples in GitHub repositories (requires `GITHUB_TOKEN`).

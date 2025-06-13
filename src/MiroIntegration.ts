@@ -83,6 +83,20 @@ export class MiroIntegration {
   constructor(accessToken: string) {
     this.accessToken = accessToken;
   }
+  async getBoardInfo(boardId: string): Promise<MiroBoard> {
+    try {
+      const response = await axios.get(`${this.miroApiUrl}/boards/${boardId}`, {
+        headers: {
+          'authorization': `Bearer ${this.accessToken}`,
+        }
+      });
+      
+      return response.data;
+    } catch (error) {
+      throw new Error(`Failed to get board info: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
   async createBoard(name: string, description?: string): Promise<MiroBoard> {
     try {
       const response = await axios.post(`${this.miroApiUrl}/boards`, {
@@ -281,6 +295,32 @@ export class MiroIntegration {
       return await this.createSlideLayout(board.id, sessionContent, layout);
     } else {
       return await this.createVerticalLayout(board.id, sessionContent, layout);
+    }
+  }
+
+  async addFramesToExistingBoard(boardId: string, sessionContent: any): Promise<LearningHourMiroLayout> {
+    const style = sessionContent.miroContent.style ?? 'slide';
+    
+    // Get board info to find a good position for new content
+    const boardInfo = await this.getBoardInfo(boardId);
+    
+    const layout: LearningHourMiroLayout = {
+      boardId: boardId,
+      viewLink: boardInfo.viewLink,
+      sections: {
+        overview: {} as MiroTextFrame,
+        objectives: [],
+        activities: [],
+        discussions: [],
+        takeaways: []
+      }
+    };
+
+    // Add frames to the existing board
+    if (style === 'slide') {
+      return await this.createSlideLayout(boardId, sessionContent, layout);
+    } else {
+      return await this.createVerticalLayout(boardId, sessionContent, layout);
     }
   }
 
