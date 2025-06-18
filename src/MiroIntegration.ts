@@ -182,9 +182,6 @@ export class MiroIntegration {
           rotation: 0,
           width: width
         },
-        parent: {
-          id: parseInt(boardId)
-        }
       };
 
       const response = await axios.post(`${this.miroApiUrl}/boards/${boardId}/texts`, requestBody, {
@@ -461,6 +458,17 @@ export class MiroIntegration {
       if (section.type === 'text_frame') {
         const contentFrame = await this.createFrame(boardId, slideX, slideY - 100, 800, 800);
 
+        if (section.content) {
+          await this.createTextBox(
+            boardId,
+            section.content,
+            slideX + 50, // Offset from frame left edge
+            slideY - 50,  // Offset from frame top edge
+            700,          // Width slightly less than frame
+            '#ffffff'     // White background
+          );
+        }
+
         if (section.title === 'Session Overview') {
           layout.sections.overview = contentFrame;
         }
@@ -514,6 +522,17 @@ export class MiroIntegration {
 
       if (section.type === 'text_frame') {
         const textFrame = await this.createFrame(boardId, -200, sectionY, 800, 800);
+
+        if (section.content) {
+          await this.createTextBox(
+            boardId,
+            section.content,
+            -150,         // Offset from frame left edge
+            sectionY + 50, // Offset from frame top edge
+            700,          // Width slightly less than frame
+            '#ffffff'     // White background
+          );
+        }
 
         if (section.title === 'Session Overview') {
           layout.sections.overview = textFrame;
