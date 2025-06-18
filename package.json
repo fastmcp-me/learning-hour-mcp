@@ -23,6 +23,7 @@
     "dotenv": "^16.5.0",
     "form-data": "^4.0.3",
     "rayso": "^1.2.1",
+    "winston": "^3.17.0",
     "zod": "^3.22.0"
   },
   "keywords": [

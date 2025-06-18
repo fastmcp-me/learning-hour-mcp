@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { logger } from './logger';
 
 interface LearningActivity {
   title: string;
@@ -424,7 +425,7 @@ CRITICAL DETAILS:
         throw new Error('No text content in response');
       }
       const content = textContent.text;
-      console.error('Raw response:', content.substring(0, 200) + '...');
+      logger.error('Raw response:', content.substring(0, 200) + '...');
 
       // Try to extract JSON from the response
       const jsonMatch = content.match(/\{[\s\S]*\}$/);

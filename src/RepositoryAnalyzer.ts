@@ -1,4 +1,5 @@
 import { GitHubMCPClient } from './GitHubMCPClient';
+import { logger } from './logger';
 
 export interface CodeExample {
   filePath: string;
@@ -57,7 +58,7 @@ export class RepositoryAnalyzer {
           if (error instanceof Error && error.message.includes('GitHub MCP client not connected')) {
             throw error;
           }
-          console.error(`Search query failed: ${query}`, error);
+          logger.error(`Search query failed: ${query}`, error);
         }
       }
 

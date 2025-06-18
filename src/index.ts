@@ -3,6 +3,7 @@
 import 'dotenv/config';
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { logger } from "./logger";
 import {
   CallToolRequestSchema,
   ErrorCode,
@@ -74,19 +75,19 @@ export class LearningHourMCP {
   private async initializeGitHubClient() {
     try {
       await this.githubClient.connect();
-      console.error("GitHub MCP client initialized successfully");
+      logger.info("GitHub MCP client initialized successfully");
     } catch (error) {
-      console.error("Failed to initialize GitHub MCP client:", error);
-      console.error("Repository analysis will use fallback mode");
+      logger.error("Failed to initialize GitHub MCP client:", error);
+      logger.warn("Repository analysis will use fallback mode");
     }
   }
 
   private initializeMiroIntegration() {
     if (process.env.MIRO_ACCESS_TOKEN) {
       this.miroIntegration = new MiroIntegration(process.env.MIRO_ACCESS_TOKEN);
-      console.error("Miro API integration initialized");
+      logger.info("Miro API integration initialized");
     } else {
-      console.error("MIRO_ACCESS_TOKEN not set, Miro board creation will be unavailable");
+      logger.warn("MIRO_ACCESS_TOKEN not set, Miro board creation will be unavailable");
     }
   }
 
@@ -588,9 +589,12 @@ export class LearningHourMCP {
   async run() {
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
-    console.error("Learning Hour MCP server running on stdio");
+    logger.info("Learning Hour MCP server running on stdio");
   }
 }
 
 const server = new LearningHourMCP();
-server.run().catch(console.error);
+server.run().catch((error) => {
+  logger.error('Failed to run server:', error);
+  process.exit(1);
+});

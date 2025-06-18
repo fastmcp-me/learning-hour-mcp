@@ -1,6 +1,7 @@
 import axios from 'axios';
 import FormData from 'form-data';
 import { CodeImageGenerator } from './CodeImageGenerator';
+import { logger } from './logger';
 
 interface MiroBoard {
   id: string;
@@ -149,7 +150,7 @@ export class MiroIntegration {
 
       return response.data;
     } catch (error: any) {
-      console.error('Text frame creation error:', {
+      logger.error('Text frame creation error:', {
         status: error.response?.status,
         statusText: error.response?.statusText,
         data: error.response?.data,
@@ -196,7 +197,7 @@ export class MiroIntegration {
 
       return response.data;
     } catch (error: any) {
-      console.error('Textbox creation error:', {
+      logger.error('Textbox creation error:', {
         status: error.response?.status,
         statusText: error.response?.statusText,
         data: error.response?.data,
@@ -230,7 +231,7 @@ export class MiroIntegration {
 
       return response.data;
     } catch (error: any) {
-      console.error('Sticky note creation error:', {
+      logger.error('Sticky note creation error:', {
         status: error.response?.status,
         statusText: error.response?.statusText,
         data: error.response?.data,
@@ -286,11 +287,11 @@ export class MiroIntegration {
         return response.data;
       } else {
         // Fallback to text-based approach
-        console.log('Using text-based code block (no image buffer available)');
+        logger.info('Using text-based code block (no image buffer available)');
         return this.createTextBasedCodeBlock(boardId, cleanCode, x, y, width, height);
       }
     } catch (error: any) {
-      console.error('Code block creation error:', {
+      logger.error('Code block creation error:', {
         status: error.response?.status,
         statusText: error.response?.statusText,
         data: error.response?.data,
@@ -404,7 +405,7 @@ export class MiroIntegration {
   }
 
   async addFramesToExistingBoard(boardId: string, sessionContent: SessionContent): Promise<LearningHourMiroLayout> {
-    console.info('Session content structure:', {
+    logger.info('Session content structure:', {
       hasMiroContent: !!sessionContent.miroContent,
       miroContentKeys: sessionContent.miroContent ? Object.keys(sessionContent.miroContent) : [],
       hasSections: sessionContent.miroContent?.sections !== undefined,

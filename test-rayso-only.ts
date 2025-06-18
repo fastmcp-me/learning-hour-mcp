@@ -1,5 +1,6 @@
 import { CodeImageGenerator } from './src/CodeImageGenerator';
 import * as fs from 'fs';
+import { logger } from './src/logger';
 
 class RaysoTest {
   private generator: CodeImageGenerator;
@@ -9,7 +10,7 @@ class RaysoTest {
   }
 
   async testRayso(): Promise<boolean> {
-    console.log('Testing Ray.so image generation...\n');
+    logger.info('Testing Ray.so image generation...\n');
     
     try {
       const result = await this.generator.generateCodeImage({
@@ -24,21 +25,21 @@ class RaysoTest {
       });
 
       if (result && result.buffer) {
-        console.log('✅ Image generated successfully!');
-        console.log(`   Buffer size: ${result.buffer.length} bytes`);
-        console.log(`   Dimensions: ${result.width}x${result.height}`);
+        logger.info('✅ Image generated successfully!');
+        logger.info(`   Buffer size: ${result.buffer.length} bytes`);
+        logger.info(`   Dimensions: ${result.width}x${result.height}`);
         
         // Save the image to verify it works
         fs.writeFileSync('test-rayso-output.png', result.buffer);
-        console.log('   Saved as: test-rayso-output.png');
+        logger.info('   Saved as: test-rayso-output.png');
         
         return true;
       } else {
-        console.log('❌ No image generated');
+        logger.error('❌ No image generated');
         return false;
       }
     } catch (error) {
-      console.error('❌ Error:', error);
+      logger.error('❌ Error:', error);
       return false;
     }
   }
@@ -50,14 +51,14 @@ class RaysoTest {
       const success = await tester.testRayso();
       
       if (success) {
-        console.log('\n✅ Ray.so test passed!');
+        logger.info('\n✅ Ray.so test passed!');
         process.exit(0);
       } else {
-        console.log('\n❌ Ray.so test failed!');
+        logger.error('\n❌ Ray.so test failed!');
         process.exit(1);
       }
     } catch (error) {
-      console.error('\n❌ Unexpected error:', error);
+      logger.error('\n❌ Unexpected error:', error);
       process.exit(1);
     }
   }

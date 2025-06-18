@@ -1,4 +1,5 @@
 import { GitHubMCPClient } from './GitHubMCPClient';
+import { logger } from './logger';
 
 export interface TechStackProfile {
   primaryLanguages: string[];
@@ -91,7 +92,7 @@ export class TechStackAnalyzer {
       if (error instanceof Error && error.message.includes('GitHub MCP client not connected')) {
         throw error;
       }
-      console.error("Failed to get repository structure:", error);
+      logger.error("Failed to get repository structure:", error);
     }
 
     return foundFiles;
@@ -180,7 +181,7 @@ export class TechStackAnalyzer {
         if (error instanceof Error && error.message.includes('GitHub MCP client not connected')) {
           throw error;
         }
-        console.error(`Failed to analyze ${file}:`, error);
+        logger.error(`Failed to analyze ${file}:`, error);
       }
     }
 
@@ -319,7 +320,7 @@ export class TechStackAnalyzer {
         }
       }
     } catch (error) {
-      console.error("Failed to detect architectural patterns:", error);
+      logger.error("Failed to detect architectural patterns:", error);
     }
 
     return [...new Set(patterns)].slice(0, 5);

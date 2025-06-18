@@ -1,3 +1,5 @@
+import { logger } from './logger';
+
 interface RayCodeOptions {
   code: string;
   language?: string;
@@ -67,7 +69,7 @@ export class CodeImageGenerator {
       this.imageCache.set(cacheKey, imageInfo);
       return imageInfo;
     } catch (error: any) {
-      console.error('Failed to generate code image:', error.message);
+      logger.error('Failed to generate code image:', error.message);
       return null;
     } finally {
       isGenerating = false;
