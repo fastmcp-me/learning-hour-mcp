@@ -1,5 +1,5 @@
-import { TechStackAnalyzer } from '../src/TechStackAnalyzer';
-import { GitHubMCPClient } from '../src/GitHubMCPClient';
+import { TechStackAnalyzer } from '../src/TechStackAnalyzer.js';
+import { GitHubMCPClient } from '../src/GitHubMCPClient.js';
 
 describe('Technology Stack Adaptation', () => {
   let analyzer: TechStackAnalyzer;

@@ -2,6 +2,7 @@
   "name": "learning-hour-mcp",
   "version": "1.1.0",
   "description": "MCP server for generating Learning Hour content and Miro boards for Technical Coaches",
+  "type": "module",
   "main": "dist/index.js",
   "bin": {
     "learning-hour-mcp": "./dist/index.js"
@@ -11,7 +12,7 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "tsx src/index.ts",
-    "test": "jest"
+    "test": "NODE_OPTIONS=\"--experimental-vm-modules\" jest"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.54.0",

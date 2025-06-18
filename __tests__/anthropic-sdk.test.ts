@@ -1,5 +1,5 @@
-import {LearningHourGenerator} from '../src/LearningHourGenerator';
-import {validateCodeExample, validateSessionContent} from '../src/schemas';
+import {LearningHourGenerator} from '../src/LearningHourGenerator.js';
+import {validateCodeExample, validateSessionContent} from '../src/schemas.js';
 
 
 describe('Anthropic SDK', () => {

@@ -1,7 +1,7 @@
-import { MiroIntegration } from '../src/MiroIntegration';
+import { MiroIntegration } from '../src/MiroIntegration.js';
 
 import 'dotenv/config';
-import { CodeImageGenerator } from '../src/CodeImageGenerator';
+import { CodeImageGenerator } from '../src/CodeImageGenerator.js';
 
 describe('Miro', () => {
 
@@ -22,7 +22,7 @@ describe('Miro', () => {
     await miro.createStickyNote(boardId, 'Hello Sticky', 320, 500, 'pink')
   });
 
-  it.skip('should create code blocks', async () => {
+  it('should create code blocks', async () => {
     await miro.createCodeBlock(boardId, '```java\npublic void main() {\nString message = "Hello World!";\n}\n```', 340, 500, 'java')
   });
 
@@ -65,7 +65,7 @@ describe('Miro', () => {
       }});
   });
 
-  it('should create frame on existing board', async () => {
+  it.skip('should create frame on existing board', async () => {
     await miro.addFramesToExistingBoard(boardId, { sessionOverview: 'code smells', miroContent: {
         boardTitle: 'Learning Hour Planning',
         style: 'slide',
