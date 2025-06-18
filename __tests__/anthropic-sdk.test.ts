@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach } from 'vitest';
 import {LearningHourGenerator} from '../src/LearningHourGenerator.js';
 import {validateCodeExample, validateSessionContent} from '../src/schemas.js';
 

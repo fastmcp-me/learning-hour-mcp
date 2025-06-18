@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach } from 'vitest';
 import { TechStackAnalyzer } from '../src/TechStackAnalyzer.js';
 import { GitHubMCPClient } from '../src/GitHubMCPClient.js';
 
