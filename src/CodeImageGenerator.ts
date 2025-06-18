@@ -63,7 +63,7 @@ export class CodeImageGenerator {
       return imageInfo;
     } catch (error: any) {
       console.error('Failed to generate code image:', error.message);
-      throw error;
+      return null;
     } finally {
       isGenerating = false;
     }

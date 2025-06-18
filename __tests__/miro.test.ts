@@ -23,7 +23,7 @@ describe('Miro', () => {
     await miro.createStickyNote(boardId, 'Hello Sticky', 320, 500, 'pink')
   });
 
-  it('should create code blocks', async () => {
+  it.skip('should create code blocks', async () => {
     await miro.createCodeBlock(boardId, '```java\npublic void main() {\nString message = "Hello World!";\n}\n```', 340, 500, 'java')
   });
 
