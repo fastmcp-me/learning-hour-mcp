@@ -1,5 +1,3 @@
-import RaySo from 'rayso';
-
 interface RayCodeOptions {
   code: string;
   language?: string;
@@ -17,6 +15,7 @@ export interface CodeImage {
   height: number;
 }
 
+let RaySoModule: any = null;
 let isGenerating = false;
 
 export class CodeImageGenerator {
@@ -37,8 +36,14 @@ export class CodeImageGenerator {
     isGenerating = true;
 
     try {
+      if (!RaySoModule) {
+        const dynamicImport = new Function('specifier', 'return import(specifier)');
+        const module = await dynamicImport('rayso');
+        RaySoModule = module.default;
+      }
+
       // Create a new RaySo instance for this generation
-      const raySo = new RaySo({
+      const raySo = new RaySoModule({
         title: options.title || 'Untitled',
         theme: options.theme || 'midnight',
         background: options.background ?? true,

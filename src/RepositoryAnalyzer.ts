@@ -1,4 +1,4 @@
-import { GitHubMCPClient } from './GitHubMCPClient.js';
+import { GitHubMCPClient } from './GitHubMCPClient';
 
 export interface CodeExample {
   filePath: string;

@@ -1,4 +1,4 @@
-import { GitHubMCPClient } from './GitHubMCPClient.js';
+import { GitHubMCPClient } from './GitHubMCPClient';
 
 export interface TechStackProfile {
   primaryLanguages: string[];

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { GitHubMCPClient } from '../src/GitHubMCPClient.js';
-import { RepositoryAnalyzer } from '../src/RepositoryAnalyzer.js';
-import { TechStackAnalyzer } from '../src/TechStackAnalyzer.js';
+import { GitHubMCPClient } from '../src/GitHubMCPClient';
+import { RepositoryAnalyzer } from '../src/RepositoryAnalyzer';
+import { TechStackAnalyzer } from '../src/TechStackAnalyzer';
 
 describe('GitHub MCP Integration', () => {
   let githubClient: GitHubMCPClient;

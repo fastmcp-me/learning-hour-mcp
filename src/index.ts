@@ -10,11 +10,11 @@ import {
   McpError,
 } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
-import { LearningHourGenerator } from "./LearningHourGenerator.js";
-import { RepositoryAnalyzer } from "./RepositoryAnalyzer.js";
-import { TechStackAnalyzer } from "./TechStackAnalyzer.js";
-import { GitHubMCPClient } from "./GitHubMCPClient.js";
-import { MiroIntegration } from "./MiroIntegration.js";
+import { LearningHourGenerator } from "./LearningHourGenerator";
+import { RepositoryAnalyzer } from "./RepositoryAnalyzer";
+import { TechStackAnalyzer } from "./TechStackAnalyzer";
+import { GitHubMCPClient } from "./GitHubMCPClient";
+import { MiroIntegration } from "./MiroIntegration";
 
 const GenerateSessionInputSchema = z.object({
   topic: z.string().min(1, "Topic is required"),

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import {LearningHourGenerator} from '../src/LearningHourGenerator.js';
-import {validateCodeExample, validateSessionContent} from '../src/schemas.js';
+import {LearningHourGenerator} from '../src/LearningHourGenerator';
+import {validateCodeExample, validateSessionContent} from '../src/schemas';
 
 
 describe('Anthropic SDK', () => {

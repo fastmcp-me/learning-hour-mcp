@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { TechStackAnalyzer } from '../src/TechStackAnalyzer.js';
-import { GitHubMCPClient } from '../src/GitHubMCPClient.js';
+import { TechStackAnalyzer } from '../src/TechStackAnalyzer';
+import { GitHubMCPClient } from '../src/GitHubMCPClient';
 
 describe('Technology Stack Adaptation', () => {
   let analyzer: TechStackAnalyzer;

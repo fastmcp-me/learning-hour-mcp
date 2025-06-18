@@ -1,6 +1,6 @@
 import axios from 'axios';
 import FormData from 'form-data';
-import { CodeImageGenerator } from './CodeImageGenerator.js';
+import { CodeImageGenerator } from './CodeImageGenerator';
 
 interface MiroBoard {
   id: string;

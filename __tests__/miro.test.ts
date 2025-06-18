@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { MiroIntegration } from '../src/MiroIntegration.js';
+import { MiroIntegration } from '../src/MiroIntegration';
 
 import 'dotenv/config';
-import { CodeImageGenerator } from '../src/CodeImageGenerator.js';
+import { CodeImageGenerator } from '../src/CodeImageGenerator';
 
 describe('Miro', () => {
 
@@ -11,7 +11,7 @@ describe('Miro', () => {
 
   const miro = new MiroIntegration(accessToken);
 
-  it.skip('should create frames', async () => {
+  it('should create frames', async () => {
     await miro.createFrame(boardId, 300, 500)
   });
 
