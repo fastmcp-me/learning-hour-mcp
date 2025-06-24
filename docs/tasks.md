@@ -17,21 +17,21 @@ The Miro board generation creates boards but has several issues:
 - [x] Test with simple text content first
 
 ### 2. Fix Frame Sizing
-- [ ] Remove hardcoded 800x800 frame sizes
-- [ ] Calculate frame size based on content length
-- [ ] Add proper padding around content
-- [ ] Ensure minimum readable sizes
+- [x] Remove hardcoded 800x800 frame sizes
+- [x] Calculate frame size based on content length
+- [x] Add proper padding around content
+- [x] Ensure minimum readable sizes
 
 ### 3. Improve Text Hierarchy
-- [ ] Make section titles larger (24-32pt)
-- [ ] Make body text readable (14-16pt)
-- [ ] Add font weight variations
+- [x] Make section titles larger (24-32pt)
+- [x] Make body text readable (14-16pt)
+- [x] Add font weight variations
 - [ ] Use color to differentiate text types
 
 ### 4. Fix Content Association
-- [ ] Ensure section.content is being used properly
-- [ ] Add content to text_frame sections
-- [ ] Display learning objectives, activities, etc. properly
+- [x] Ensure section.content is being used properly
+- [x] Add content to text_frame sections
+- [x] Display learning objectives, activities, etc. properly
 
 ## Phase 1: MiroBoardDesigner Foundation
 

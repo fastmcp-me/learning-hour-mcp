@@ -2,6 +2,8 @@ import axios from 'axios';
 import FormData from 'form-data';
 import { CodeImageGenerator } from './CodeImageGenerator';
 import { logger } from './logger';
+import { ContentSizer } from './ContentSizer';
+import { ContentPostProcessor } from './ContentPostProcessor';
 
 interface MiroBoard {
   id: string;
@@ -83,10 +85,14 @@ export class MiroIntegration {
   private readonly miroApiUrl = 'https://api.miro.com/v2';
   private readonly accessToken: string;
   private codeImageGenerator: CodeImageGenerator;
+  private contentSizer: ContentSizer;
+  private contentPostProcessor: ContentPostProcessor;
 
   constructor(accessToken: string) {
     this.accessToken = accessToken;
     this.codeImageGenerator = new CodeImageGenerator();
+    this.contentSizer = new ContentSizer();
+    this.contentPostProcessor = new ContentPostProcessor();
   }
 
   async listBoards(limit: number = 50, cursor?: string): Promise<{ data: MiroBoard[], cursor?: string }> {
@@ -162,7 +168,16 @@ export class MiroIntegration {
     }
   }
 
-  async createTextBox(boardId: string, content: string, x: number, y: number, width: number, fillColor: string = '#F7F7F7'): Promise<any> {
+  async createTextBox(
+    boardId: string,
+    content: string,
+    x: number,
+    y: number,
+    width: number,
+    fillColor: string = '#F7F7F7',
+    fontSize: number = 16,
+    fontWeight: 'normal' | 'bold' = 'normal'
+  ): Promise<any> {
     try {
       const requestBody: any = {
         data: {
@@ -172,6 +187,7 @@ export class MiroIntegration {
           color: "#1a1a1a",
           fillColor: fillColor,
           fontFamily: "arial",
+          fontSize: fontSize,
           textAlign: "left"
         },
         position: {
@@ -353,9 +369,12 @@ export class MiroIntegration {
   }
 
   async createLearningHourBoard(sessionContent: SessionContent): Promise<LearningHourMiroLayout> {
-    const boardName = sessionContent.miroContent.boardTitle;
-    const board = await this.createBoard(boardName, sessionContent.sessionOverview);
-    const style = sessionContent.miroContent.style ?? 'slide';
+    // Post-process content to replace placeholders
+    const processedContent = this.contentPostProcessor.processSessionContent(sessionContent);
+
+    const boardName = processedContent.miroContent.boardTitle;
+    const board = await this.createBoard(boardName, processedContent.sessionOverview);
+    const style = processedContent.miroContent.style ?? 'slide';
 
     const layout: LearningHourMiroLayout = {
       boardId: board.id,
@@ -370,9 +389,9 @@ export class MiroIntegration {
     };
 
     if (style === 'slide') {
-      return await this.createSlideLayout(board.id, sessionContent, layout);
+      return await this.createSlideLayout(board.id, processedContent, layout);
     } else {
-      return await this.createVerticalLayout(board.id, sessionContent, layout);
+      return await this.createVerticalLayout(board.id, processedContent, layout);
     }
   }
 
@@ -402,15 +421,18 @@ export class MiroIntegration {
   }
 
   async addFramesToExistingBoard(boardId: string, sessionContent: SessionContent): Promise<LearningHourMiroLayout> {
+    // Post-process content to replace placeholders
+    const processedContent = this.contentPostProcessor.processSessionContent(sessionContent);
+
     logger.info('Session content structure:', {
-      hasMiroContent: !!sessionContent.miroContent,
-      miroContentKeys: sessionContent.miroContent ? Object.keys(sessionContent.miroContent) : [],
-      hasSections: sessionContent.miroContent?.sections !== undefined,
-      sectionsType: Array.isArray(sessionContent.miroContent?.sections) ? 'array' : typeof sessionContent.miroContent?.sections,
-      sectionsLength: Array.isArray(sessionContent.miroContent?.sections) ? sessionContent.miroContent.sections.length : 'N/A'
+      hasMiroContent: !!processedContent.miroContent,
+      miroContentKeys: processedContent.miroContent ? Object.keys(processedContent.miroContent) : [],
+      hasSections: processedContent.miroContent?.sections !== undefined,
+      sectionsType: Array.isArray(processedContent.miroContent?.sections) ? 'array' : typeof processedContent.miroContent?.sections,
+      sectionsLength: Array.isArray(processedContent.miroContent?.sections) ? processedContent.miroContent.sections.length : 'N/A'
     });
 
-    const style = sessionContent.miroContent?.style ?? 'slide';
+    const style = processedContent.miroContent?.style ?? 'slide';
 
     // Get board info to find a good position for new content
     const boardInfo = await this.getBoardInfo(boardId);
@@ -429,9 +451,9 @@ export class MiroIntegration {
 
     // Add frames to the existing board
     if (style === 'slide') {
-      return await this.createSlideLayout(boardId, sessionContent, layout);
+      return await this.createSlideLayout(boardId, processedContent, layout);
     } else {
-      return await this.createVerticalLayout(boardId, sessionContent, layout);
+      return await this.createVerticalLayout(boardId, processedContent, layout);
     }
   }
 
@@ -449,23 +471,45 @@ export class MiroIntegration {
       const slideX = currentSlideX;
       const slideY = 0;
 
-      // Create title text box for this section
-      await this.createTextBox(boardId, section.title, slideX - 50, slideY - 300, 800, '#ffffff');
+      // Create title text box for this section with larger font
+      await this.createTextBox(
+        boardId,
+        section.title,
+        slideX - 50,
+        slideY - 300,
+        800,
+        '#ffffff',
+        28,  // Larger font for titles
+        'bold'
+      );
+
+      // Calculate dynamic frame size based on content
+      const titleFrameDimensions = this.contentSizer.calculateFrameDimensions(undefined, section.title);
 
       // Create frame for section title
-      await this.createFrame(boardId, slideX, slideY - 250, 800, 800);
+      await this.createFrame(boardId, slideX, slideY - 250, titleFrameDimensions.width, titleFrameDimensions.height);
 
       if (section.type === 'text_frame') {
-        const contentFrame = await this.createFrame(boardId, slideX, slideY - 100, 800, 800);
+        // Calculate frame size based on actual content
+        const contentFrameDimensions = this.contentSizer.calculateFrameDimensions(section.content, section.title);
+        const contentFrame = await this.createFrame(
+          boardId,
+          slideX,
+          slideY - 100,
+          contentFrameDimensions.width,
+          contentFrameDimensions.height
+        );
 
         if (section.content) {
           await this.createTextBox(
             boardId,
             section.content,
-            slideX + 50, // Offset from frame left edge
-            slideY - 50,  // Offset from frame top edge
-            700,          // Width slightly less than frame
-            '#ffffff'     // White background
+            slideX + 40, // Padding from frame left edge
+            slideY - 60,  // Padding from frame top edge
+            contentFrameDimensions.width - 80, // Width with padding
+            '#ffffff',    // White background
+            18,          // Readable font size for content
+            'normal'
           );
         }
 
@@ -483,8 +527,8 @@ export class MiroIntegration {
           300
         );
       } else if (section.type === 'code_examples' && section.beforeCode && section.afterCode) {
-        await this.createTextBox(boardId, 'Before', slideX - 350, slideY - 300, 100, '#FFE066');
-        await this.createTextBox(boardId, 'After', slideX + 250, slideY - 300, 100, '#06D6A0');
+        await this.createTextBox(boardId, 'Before', slideX - 350, slideY - 300, 100, '#FFE066', 20, 'bold');
+        await this.createTextBox(boardId, 'After', slideX + 250, slideY - 300, 100, '#06D6A0', 20, 'bold');
 
         await this.createCodeBlock(boardId, section.beforeCode, slideX - 350, slideY - 50, section.language || 'javascript', 400, 350, 'Before', 'midnight');
 
@@ -516,28 +560,50 @@ export class MiroIntegration {
       const sectionY = currentY;
       currentY += sectionSpacing;
 
-      // Create title text box for vertical layout
-      await this.createTextBox(boardId, section.title, -500, sectionY - 50, 200, '#ffffff');
-      await this.createFrame(boardId, -500, sectionY, 800, 800);
+      // Calculate dynamic frame size based on content
+      const titleFrameDimensions = this.contentSizer.calculateFrameDimensions(undefined, section.title);
+
+      // Create title text box for vertical layout with larger font
+      await this.createTextBox(
+        boardId,
+        section.title,
+        -500,
+        sectionY - 50,
+        titleFrameDimensions.width - 100,
+        '#ffffff',
+        28,  // Larger font for titles
+        'bold'
+      );
+      await this.createFrame(boardId, -500, sectionY, titleFrameDimensions.width, titleFrameDimensions.height);
 
       if (section.type === 'text_frame') {
-        const textFrame = await this.createFrame(boardId, -200, sectionY, 800, 800);
+        // Calculate frame size based on actual content
+        const contentFrameDimensions = this.contentSizer.calculateFrameDimensions(section.content, section.title);
+        const textFrame = await this.createFrame(
+          boardId,
+          -200,
+          sectionY,
+          contentFrameDimensions.width,
+          contentFrameDimensions.height
+        );
 
         if (section.content) {
           await this.createTextBox(
             boardId,
             section.content,
-            -150,         // Offset from frame left edge
-            sectionY + 50, // Offset from frame top edge
-            700,          // Width slightly less than frame
-            '#ffffff'     // White background
+            -160,         // Padding from frame left edge
+            sectionY + 40, // Padding from frame top edge
+            contentFrameDimensions.width - 80, // Width with padding
+            '#ffffff',    // White background
+            18,          // Readable font size for content
+            'normal'
           );
         }
 
         if (section.title === 'Session Overview') {
           layout.sections.overview = textFrame;
         }
-        currentY += 200;
+        currentY += contentFrameDimensions.height + 50; // Dynamic spacing based on content
       } else if (section.type === 'code_block' && section.code) {
         await this.createCodeBlock(
           boardId,
@@ -550,8 +616,8 @@ export class MiroIntegration {
         );
         currentY += 350;
       } else if (section.type === 'code_examples' && section.beforeCode && section.afterCode) {
-        await this.createTextBox(boardId, 'Before', -600, sectionY, 100, '#FFE066');
-        await this.createTextBox(boardId, 'After', 100, sectionY, 100, '#06D6A0');
+        await this.createTextBox(boardId, 'Before', -600, sectionY, 100, '#FFE066', 20, 'bold');
+        await this.createTextBox(boardId, 'After', 100, sectionY, 100, '#06D6A0', 20, 'bold');
 
         await this.createCodeBlock(boardId, section.beforeCode, -600, sectionY + 50, section.language || 'javascript', 400, 350, 'Before', 'midnight');
 
